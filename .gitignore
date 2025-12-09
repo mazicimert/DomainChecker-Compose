@@ -1,0 +1,42 @@
+# Gradle Build Dosyaları (Bu klasörler derleme sırasında oluşur, yüklenmemelidir)
+.gradle/
+build/
+app/build/
+
+# Yerel Yapılandırma Dosyaları (SDK yolu ve gizli anahtarlar içerebilir)
+local.properties
+
+# Android Studio / IntelliJ IDEA Ayarları
+.idea/caches
+.idea/libraries
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/jarRepositories.xml
+*.iws
+*.iml
+*.ipr
+
+# Android Geçici Dosyaları
+captures/
+.externalNativeBuild
+.cxx
+*.apk
+*.ap_
+
+# İşletim Sistemi Dosyaları (Mac/Windows gereksiz dosyaları)
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Kotlin / Java Class dosyaları
+*.class
+
+# Google Services (Eğer projenizde varsa ve public repo ise bu dosyayı gizlemek isteyebilirsiniz)
+# google-services.json
