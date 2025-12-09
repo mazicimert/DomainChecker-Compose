@@ -1,0 +1,22 @@
+{
+  "popular": [
+    "com", "net", "org", "biz"
+  ],
+  "international": [
+    "com", "net", "org", "biz", "name", "info",
+    "kim", "mobi", "blog", "futbol", "pro", "social",
+    "xxx", "xyz", "moda", "bar", "blue", "buzz",
+    "host", "pictures", "red", "webcam", "website", "diet",
+    "hosting", "wiki", "click", "online",
+    "ist", "istanbul", "store", "shop", "rent", "email", "media"
+  ],
+  "country": [
+    "us", "eu", "tv", "cc", "in", "de", "be", "co", "nl", "fr", "ru", "uk", "me", "tr"
+  ],
+  "turkey": [
+    "com.tr", "net.tr", "org.tr", "edu.tr", "gov.tr",
+    "mil.tr", "av.tr", "dr.tr", "biz.tr", "info.tr",
+    "tel.tr", "web.tr", "gen.tr", "k12.tr",
+    "kep.tr", "bel.tr", "pol.tr", "bbs.tr", "name.tr", "tv.tr"
+  ]
+}
