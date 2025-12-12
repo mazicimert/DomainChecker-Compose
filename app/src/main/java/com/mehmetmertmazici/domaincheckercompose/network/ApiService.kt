@@ -6,7 +6,7 @@ import retrofit2.http.*
 interface ApiService {
 
     // ============================================
-    // DOMAIN SEARCH
+    // DOMAIN SEARCH - Mevcut
     // ============================================
 
     @POST("tr/api/search")
