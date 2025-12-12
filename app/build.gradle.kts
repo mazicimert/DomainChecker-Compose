@@ -73,9 +73,6 @@ dependencies {
 
     implementation (libs.material)
 
-
-
-
     // --- NAVIGATION (Sayfalar arası geçiş için) ---
     implementation(libs.androidx.navigation.compose)
 
@@ -87,12 +84,10 @@ dependencies {
     implementation(libs.gson)
     implementation (libs.okhttp)
 
-
     implementation(libs.androidx.material.icons.extended)
 
-
-
-
+    // DataStore (Session yönetimi için)
+    implementation(libs.androidx.datastore.preferences)
 
 
 }
