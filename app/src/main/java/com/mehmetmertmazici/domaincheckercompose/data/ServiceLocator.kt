@@ -1,5 +1,6 @@
 package com.mehmetmertmazici.domaincheckercompose.data
 
+import android.annotation.SuppressLint
 import android.content.Context
 import com.mehmetmertmazici.domaincheckercompose.data.repository.AuthRepository
 import com.mehmetmertmazici.domaincheckercompose.data.repository.CartRepository
@@ -17,7 +18,7 @@ import com.mehmetmertmazici.domaincheckercompose.data.repository.UserRepository
  * 2. İstediğin yerde erişim:
  *    val authRepo = ServiceLocator.authRepository
  */
-
+@SuppressLint("StaticFieldLeak") 
 object ServiceLocator {
 
     private var _context: Context? = null
@@ -38,7 +39,7 @@ object ServiceLocator {
     // ============================================
 
     fun initialize(context: Context) {
-        this._context = context.applicationContext
+        _context = context.applicationContext
     }
 
     // ============================================

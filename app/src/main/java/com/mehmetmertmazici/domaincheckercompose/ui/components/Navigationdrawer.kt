@@ -6,15 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.Help
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -24,6 +19,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mehmetmertmazici.domaincheckercompose.R
+import com.mehmetmertmazici.domaincheckercompose.data.ServiceLocator
 import com.mehmetmertmazici.domaincheckercompose.ui.theme.DarkColors
 import com.mehmetmertmazici.domaincheckercompose.ui.theme.LightColors
 
@@ -41,13 +37,21 @@ fun DomainCheckerDrawer(
     val colors = if (isDarkTheme) DarkColors else LightColors
     val scrollState = rememberScrollState()
 
-    // Tüm öğeler için ortak renk ayarı
+    // Session durumunu dinle
+    val isLoggedIn by ServiceLocator.sessionManager.isLoggedIn.collectAsState(initial = false)
+    val userName by ServiceLocator.sessionManager.userName.collectAsState(initial = null)
+    val userEmail by ServiceLocator.sessionManager.userEmail.collectAsState(initial = null)
+
+    // Sepet sayısını dinle
+    val cartItems by ServiceLocator.cartRepository.cartItems.collectAsState()
+    val cartItemCount = cartItems.size
+
     val itemColors = NavigationDrawerItemDefaults.colors(
         selectedContainerColor = colors.Primary.copy(alpha = 0.1f),
         selectedIconColor = colors.Primary,
         selectedTextColor = colors.Primary,
-        unselectedIconColor = colors.Primary, // Tutarlılık için eklendi
-        unselectedTextColor = colors.TextPrimary // Tutarlılık için eklendi
+        unselectedIconColor = colors.Primary,
+        unselectedTextColor = colors.TextPrimary
     )
 
     ModalDrawerSheet(
@@ -90,18 +94,34 @@ fun DomainCheckerDrawer(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
-                        text = "Domain Checker",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    if (isLoggedIn && userName != null) {
+                        // Logged in user info
+                        Text(
+                            text = userName ?: "Kullanıcı",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
 
-                    Text(
-                        text = "İsimKayıt ile domain arayın",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.8f)
-                    )
+                        Text(
+                            text = userEmail ?: "",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    } else {
+                        Text(
+                            text = "Domain Checker",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+
+                        Text(
+                            text = "İsimKayıt ile domain arayın",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
                 }
             }
 
@@ -118,7 +138,7 @@ fun DomainCheckerDrawer(
                 },
                 selected = selectedRoute == "home",
                 onClick = { onNavigate("home") },
-                colors = itemColors, // Ortak renkler kullanılıyor
+                colors = itemColors,
                 modifier = Modifier.padding(horizontal = 12.dp)
             )
 
@@ -132,11 +152,128 @@ fun DomainCheckerDrawer(
                 },
                 selected = selectedRoute == "prices",
                 onClick = { onNavigate("prices") },
-                colors = itemColors, // Ortak renkler kullanılıyor
+                colors = itemColors,
                 modifier = Modifier.padding(horizontal = 12.dp)
             )
 
-            Divider(
+            // Sepet (Cart) - Badge ile
+            NavigationDrawerItem(
+                label = { Text("Sepetim") },
+                icon = {
+                    BadgedBox(
+                        badge = {
+                            if (cartItemCount > 0) {
+                                Badge(
+                                    containerColor = colors.Error,
+                                    contentColor = Color.White
+                                ) {
+                                    Text(cartItemCount.toString())
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.ShoppingCart,
+                            contentDescription = null
+                        )
+                    }
+                },
+                selected = selectedRoute == "cart",
+                onClick = { onNavigate("cart") },
+                colors = itemColors,
+                modifier = Modifier.padding(horizontal = 12.dp)
+            )
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp)
+            )
+
+            // Account Section
+            Text(
+                text = "Hesap",
+                style = MaterialTheme.typography.labelLarge,
+                color = colors.TextTertiary,
+                modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp)
+            )
+
+            if (isLoggedIn) {
+                // Logged in options
+                NavigationDrawerItem(
+                    label = { Text("Profilim") },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.Person,
+                            contentDescription = null
+                        )
+                    },
+                    selected = selectedRoute == "profile",
+                    onClick = { onNavigate("profile") },
+                    colors = itemColors,
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+
+                NavigationDrawerItem(
+                    label = { Text("Siparişlerim") },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.Receipt,
+                            contentDescription = null
+                        )
+                    },
+                    selected = selectedRoute == "orders",
+                    onClick = { onNavigate("orders") },
+                    colors = itemColors,
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+
+                NavigationDrawerItem(
+                    label = { Text("Çıkış Yap") },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.Logout,
+                            contentDescription = null,
+                            tint = colors.Error
+                        )
+                    },
+                    selected = false,
+                    onClick = { onNavigate("logout") },
+                    colors = NavigationDrawerItemDefaults.colors(
+                        unselectedTextColor = colors.Error
+                    ),
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+            } else {
+                // Not logged in options
+                NavigationDrawerItem(
+                    label = { Text("Giriş Yap") },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.Login,
+                            contentDescription = null
+                        )
+                    },
+                    selected = selectedRoute == "login",
+                    onClick = { onNavigate("login") },
+                    colors = itemColors,
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+
+                NavigationDrawerItem(
+                    label = { Text("Kayıt Ol") },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.PersonAdd,
+                            contentDescription = null
+                        )
+                    },
+                    selected = selectedRoute == "register",
+                    onClick = { onNavigate("register") },
+                    colors = itemColors,
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+            }
+
+            HorizontalDivider(
                 modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp)
             )
 
@@ -158,7 +295,7 @@ fun DomainCheckerDrawer(
                 },
                 selected = selectedRoute == "about",
                 onClick = { onNavigate("about") },
-                colors = itemColors, // Ortak renkler kullanılıyor
+                colors = itemColors,
                 modifier = Modifier.padding(horizontal = 12.dp)
             )
 
@@ -172,11 +309,11 @@ fun DomainCheckerDrawer(
                 },
                 selected = false,
                 onClick = onHelp,
-                colors = itemColors, // Ortak renkler kullanılıyor
+                colors = itemColors,
                 modifier = Modifier.padding(horizontal = 12.dp)
             )
 
-            Divider(
+            HorizontalDivider(
                 modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp)
             )
 
@@ -198,7 +335,7 @@ fun DomainCheckerDrawer(
                 },
                 selected = false,
                 onClick = onIsimkayit,
-                colors = itemColors, // Ortak renkler kullanılıyor
+                colors = itemColors,
                 modifier = Modifier.padding(horizontal = 12.dp)
             )
 
@@ -212,7 +349,7 @@ fun DomainCheckerDrawer(
                 },
                 selected = false,
                 onClick = onRate,
-                colors = itemColors, // Ortak renkler kullanılıyor
+                colors = itemColors,
                 modifier = Modifier.padding(horizontal = 12.dp)
             )
 
@@ -226,9 +363,11 @@ fun DomainCheckerDrawer(
                 },
                 selected = false,
                 onClick = onShare,
-                colors = itemColors, // Ortak renkler kullanılıyor
+                colors = itemColors,
                 modifier = Modifier.padding(horizontal = 12.dp)
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
