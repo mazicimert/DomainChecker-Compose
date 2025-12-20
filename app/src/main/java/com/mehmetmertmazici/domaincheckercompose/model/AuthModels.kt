@@ -35,22 +35,42 @@ data class LoginResponse(
 // REGISTER
 // ============================================
 
+/**
+ * Hesap Türü
+ */
+enum class AccountType(val value: String, val displayName: String) {
+    INDIVIDUAL("individual", "Bireysel"),
+    CORPORATE("corporate", "Kurumsal");
+
+    companion object {
+        fun fromValue(value: String): AccountType {
+            return entries.find { it.value == value } ?: INDIVIDUAL
+        }
+    }
+}
+
 data class RegisterRequest(
     val name: String,
     val surname: String,
     val companyname: String = "",
     val email: String,
-    val adres: String,
-    val adres2: String = "",
-    val sehir: String,
-    val ilce: String,
+    val address: String,
+    val address2: String = "",
+    val city: String,
+    val district: String,
     val zipcode: String,
-    val ulke: String = "TR",
+    val country: String = "TR",
     val phone: String,
     val vergino: String = "",
     val password: String,
     val gsm: String,
-    val gsmCode: String = ""
+    val gsmCode: String = "",
+
+    @SerializedName("uyelik_turu")
+    val membershipType: Int, // 1: Bireysel, 2: Kurumsal
+
+    val contracts: List<Int> = emptyList()
+
 )
 
 data class RegisterResponse(

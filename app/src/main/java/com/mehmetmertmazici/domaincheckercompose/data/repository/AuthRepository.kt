@@ -1,6 +1,7 @@
 package com.mehmetmertmazici.domaincheckercompose.data.repository
 
 import com.mehmetmertmazici.domaincheckercompose.data.SessionManager
+import com.mehmetmertmazici.domaincheckercompose.model.Contract
 import com.mehmetmertmazici.domaincheckercompose.model.ForgetPasswordResponse
 import com.mehmetmertmazici.domaincheckercompose.model.LoginResponse
 import com.mehmetmertmazici.domaincheckercompose.model.RegisterRequest
@@ -14,6 +15,9 @@ class AuthRepository(
     private val sessionManager: SessionManager
 ) {
     private val apiService = ApiClient.apiService
+
+    // Cache for contracts
+    private var cachedContracts: List<Contract>? = null
 
     // ============================================
     // LOGIN
@@ -49,17 +53,19 @@ class AuthRepository(
                     surname = request.surname,
                     companyName = request.companyname,
                     email = request.email,
-                    address = request.adres,
-                    address2 = request.adres2,
-                    city = request.sehir,
-                    district = request.ilce,
+                    address = request.address,
+                    address2 = request.address2,
+                    city = request.city,
+                    district = request.district,
                     zipCode = request.zipcode,
-                    country = request.ulke,
+                    country = request.country,
                     phone = request.phone,
                     taxNumber = request.vergino,
                     password = request.password,
                     gsm = request.gsm,
-                    gsmCode = request.gsmCode
+                    gsmCode = request.gsmCode,
+                    membershipType = request.membershipType,
+                    contracts = request.contracts
                 )
 
                 if (response.isSuccess) {
@@ -68,6 +74,32 @@ class AuthRepository(
                     Result.success(response)
                 } else {
                     Result.failure(Exception(response.message ?: "Kayıt başarısız"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    // ============================================
+    // MEMBERSHIP CONTRACTS - Üyelik Sözleşmeleri
+    // ============================================
+
+    suspend fun getMembershipContracts(forceRefresh: Boolean = false): Result<List<Contract>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                // Cache kontrolü
+                if (!forceRefresh && cachedContracts != null) {
+                    return@withContext Result.success(cachedContracts!!)
+                }
+
+                val response = apiService.getMembershipContracts()
+
+                if (response.isSuccess) {
+                    cachedContracts = response.contracts
+                    Result.success(response.contracts)
+                } else {
+                    Result.failure(Exception("Sözleşmeler yüklenemedi"))
                 }
             } catch (e: Exception) {
                 Result.failure(e)

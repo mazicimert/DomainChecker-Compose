@@ -124,7 +124,7 @@ data class KdvConfigResponse(
     val status: String,
 
     @SerializedName("kdv")
-    val kdv: String?, // KDV oranı (örn: "20")
+    val kdv: String?,
 
     @SerializedName("kdv_enabled")
     val kdvEnabled: Boolean?
@@ -224,4 +224,39 @@ data class FieldOption(
 
     @SerializedName("label")
     val label: String?
+)
+
+// ============================================
+// CONTRACTS - Sözleşmeler (Üyelik)
+// ============================================
+
+data class ContractsResponse(
+    @SerializedName("code")
+    val code: Int,
+
+    @SerializedName("status")
+    val status: String,
+
+    @SerializedName("message")
+    val message: List<Contract>?
+) {
+    val isSuccess: Boolean
+        get() = code == 1 && status == "success"
+
+    val contracts: List<Contract>
+        get() = message ?: emptyList()
+}
+
+data class Contract(
+    @SerializedName("id")
+    val id: Int,
+
+    @SerializedName("baslik")
+    val title: String,
+
+    @SerializedName("icerik")
+    val content: String, // HTML içerik
+
+    @SerializedName("versiyon")
+    val version: String
 )

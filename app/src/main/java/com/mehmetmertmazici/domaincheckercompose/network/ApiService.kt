@@ -46,18 +46,23 @@ interface ApiService {
         @Field("surname") surname: String,
         @Field("companyname") companyName: String,
         @Field("email") email: String,
-        @Field("adres") address: String,
-        @Field("adres2") address2: String,
-        @Field("sehir") city: String,
-        @Field("ilce") district: String,
+        @Field("address") address: String,
+        @Field("address2") address2: String,
+        @Field("city") city: String,
+        @Field("district") district: String,
         @Field("zipcode") zipCode: String,
-        @Field("ulke") country: String,
+        @Field("country") country: String,
         @Field("phone") phone: String,
         @Field("vergino") taxNumber: String,
         @Field("password") password: String,
         @Field("gsm") gsm: String,
-        @Field("gsm_code") gsmCode: String = ""
+        @Field("gsm_code") gsmCode: String = "",
+        @Field("uyelik_turu") membershipType: Int,
+        @Field("contracts[]") contracts: List<Int>
     ): RegisterResponse
+
+    @GET("tr/api/contracts/membership")
+    suspend fun getMembershipContracts(): ContractsResponse
 
     @POST("tr/api/forget_password")
     @FormUrlEncoded

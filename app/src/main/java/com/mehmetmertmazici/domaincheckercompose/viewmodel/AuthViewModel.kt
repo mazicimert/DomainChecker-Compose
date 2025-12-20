@@ -3,6 +3,8 @@ package com.mehmetmertmazici.domaincheckercompose.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mehmetmertmazici.domaincheckercompose.data.ServiceLocator
+import com.mehmetmertmazici.domaincheckercompose.model.AccountType
+import com.mehmetmertmazici.domaincheckercompose.model.Contract
 import com.mehmetmertmazici.domaincheckercompose.model.RegisterRequest
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,8 +32,15 @@ data class LoginUiState(
     val passwordError: String? = null
 )
 
+// Contract Acceptance State
+data class ContractAcceptance(
+    val contract: Contract,
+    val isAccepted: Boolean = false
+)
+
 // Register UI State
 data class RegisterUiState(
+    val accountType: AccountType = AccountType.INDIVIDUAL,
     val name: String = "",
     val surname: String = "",
     val email: String = "",
@@ -40,6 +49,7 @@ data class RegisterUiState(
     val phone: String = "",
     val gsm: String = "",
     val address: String = "",
+    val address2: String = "",
     val city: String = "",
     val district: String = "",
     val zipCode: String = "",
@@ -48,9 +58,30 @@ data class RegisterUiState(
     val taxNumber: String = "",
     val isLoading: Boolean = false,
     val isPasswordVisible: Boolean = false,
-    val currentStep: Int = 1, // 1: Kişisel, 2: İletişim, 3: Adres
-    val errors: Map<String, String> = emptyMap()
-)
+    val currentStep: Int = 1, // 1: Kişisel, 2: İletişim, 3: Adres + Sözleşmeler
+    val errors: Map<String, String> = emptyMap(),
+
+    // Sözleşme state'leri
+    val contracts: List<ContractAcceptance> = emptyList(),
+    val isLoadingContracts: Boolean = false,
+    val contractsError: String? = null,
+
+    // Dialog state
+    val showContractDialog: Contract? = null,
+    val dialogScrolledToEnd: Boolean = false
+) {
+    val isCorporate: Boolean
+        get() = accountType == AccountType.CORPORATE
+
+    // Tüm sözleşmeler kabul edildi mi?
+    val allContractsAccepted: Boolean
+        get() = contracts.isNotEmpty() && contracts.all { it.isAccepted }
+
+    // Belirli bir sözleşme kabul edildi mi?
+    fun isContractAccepted(contractId: Int): Boolean {
+        return contracts.find { it.contract.id == contractId }?.isAccepted == true
+    }
+}
 
 // Forgot Password UI State
 data class ForgotPasswordUiState(
@@ -79,7 +110,6 @@ class AuthViewModel : ViewModel() {
     // Effects
     private val _effect = Channel<AuthEffect>()
     val effect = _effect.receiveAsFlow()
-
 
     // ============================================
     // LOGIN İŞLEMLERİ
@@ -154,6 +184,24 @@ class AuthViewModel : ViewModel() {
     // REGISTER İŞLEMLERİ
     // ============================================
 
+    fun updateAccountType(accountType: AccountType) {
+        _registerState.update { state ->
+            if (accountType == AccountType.INDIVIDUAL) {
+                state.copy(
+                    accountType = accountType,
+                    companyName = "",
+                    taxNumber = "",
+                    errors = state.errors.toMutableMap().apply {
+                        remove("companyName")
+                        remove("taxNumber")
+                    }
+                )
+            } else {
+                state.copy(accountType = accountType)
+            }
+        }
+    }
+
     fun updateRegisterField(field: String, value: String) {
         _registerState.update { state ->
             val newErrors = state.errors.toMutableMap().apply { remove(field) }
@@ -166,6 +214,7 @@ class AuthViewModel : ViewModel() {
                 "phone" -> state.copy(phone = value, errors = newErrors)
                 "gsm" -> state.copy(gsm = value, errors = newErrors)
                 "address" -> state.copy(address = value, errors = newErrors)
+                "address2" -> state.copy(address2 = value, errors = newErrors)
                 "city" -> state.copy(city = value, errors = newErrors)
                 "district" -> state.copy(district = value, errors = newErrors)
                 "zipCode" -> state.copy(zipCode = value, errors = newErrors)
@@ -186,10 +235,22 @@ class AuthViewModel : ViewModel() {
         val errors = validateRegisterStep(state.currentStep)
 
         if (errors.isEmpty()) {
-            if (state.currentStep < 3) {
-                _registerState.update { it.copy(currentStep = state.currentStep + 1) }
-            } else {
-                register()
+            when {
+                state.currentStep < 3 -> {
+                    _registerState.update { it.copy(currentStep = state.currentStep + 1) }
+                    // 3. adıma geçerken sözleşmeleri yükle
+                    if (state.currentStep == 2) {
+                        loadContracts()
+                    }
+                }
+                state.currentStep == 3 -> {
+                    // Son adımda kayıt ol
+                    if (state.allContractsAccepted) {
+                        register()
+                    } else {
+                        sendEffect(AuthEffect.ShowError("Lütfen tüm sözleşmeleri okuyup onaylayınız"))
+                    }
+                }
             }
         } else {
             _registerState.update { it.copy(errors = errors) }
@@ -227,10 +288,21 @@ class AuthViewModel : ViewModel() {
                 if (state.passwordConfirm != state.password) {
                     errors["passwordConfirm"] = "Şifreler eşleşmiyor"
                 }
+
+                // Kurumsal hesap için ek validasyon
+                if (state.isCorporate) {
+                    if (state.companyName.isBlank()) {
+                        errors["companyName"] = "Firma adı gerekli"
+                    }
+                    if (state.taxNumber.isBlank()) {
+                        errors["taxNumber"] = "Vergi numarası gerekli"
+                    } else if (state.taxNumber.length < 10) {
+                        errors["taxNumber"] = "Geçerli bir vergi numarası girin"
+                    }
+                }
             }
             2 -> {
                 if (state.phone.isBlank()) errors["phone"] = "Telefon gerekli"
-                if (state.gsm.isBlank()) errors["gsm"] = "GSM gerekli"
             }
             3 -> {
                 if (state.address.isBlank()) errors["address"] = "Adres gerekli"
@@ -243,11 +315,116 @@ class AuthViewModel : ViewModel() {
         return errors
     }
 
+    // ============================================
+    // SÖZLEŞME İŞLEMLERİ
+    // ============================================
+
+    private fun loadContracts() {
+        // Zaten yüklenmişse tekrar yükleme
+        if (_registerState.value.contracts.isNotEmpty()) return
+
+        viewModelScope.launch {
+            _registerState.update { it.copy(isLoadingContracts = true, contractsError = null) }
+
+            val result = authRepository.getMembershipContracts()
+
+            result.fold(
+                onSuccess = { contracts ->
+                    _registerState.update { state ->
+                        state.copy(
+                            isLoadingContracts = false,
+                            contracts = contracts.map { contract ->
+                                ContractAcceptance(contract = contract)
+                            }
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _registerState.update {
+                        it.copy(
+                            isLoadingContracts = false,
+                            contractsError = error.message ?: "Sözleşmeler yüklenemedi"
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    fun retryLoadContracts() {
+        _registerState.update { it.copy(contracts = emptyList()) }
+        loadContracts()
+    }
+
+    /**
+     * Sözleşme checkbox'ına tıklandığında dialog aç
+     */
+    fun openContractDialog(contract: Contract) {
+        _registerState.update {
+            it.copy(
+                showContractDialog = contract,
+                dialogScrolledToEnd = false
+            )
+        }
+    }
+
+    /**
+     * Dialog'u kapat
+     */
+    fun closeContractDialog() {
+        _registerState.update {
+            it.copy(
+                showContractDialog = null,
+                dialogScrolledToEnd = false
+            )
+        }
+    }
+
+    /**
+     * Dialog'da scroll sonuna ulaşıldı
+     */
+    fun onDialogScrolledToEnd() {
+        _registerState.update { it.copy(dialogScrolledToEnd = true) }
+    }
+
+    /**
+     * Dialog'daki "Kabul Ediyorum" butonuna basıldı
+     */
+    fun acceptContractFromDialog() {
+        val currentContract = _registerState.value.showContractDialog ?: return
+
+        _registerState.update { state ->
+            val updatedContracts = state.contracts.map { acceptance ->
+                if (acceptance.contract.id == currentContract.id) {
+                    acceptance.copy(isAccepted = true)
+                } else {
+                    acceptance
+                }
+            }
+            state.copy(
+                contracts = updatedContracts,
+                showContractDialog = null,
+                dialogScrolledToEnd = false
+            )
+        }
+    }
+
+    // ============================================
+    // KAYIT İŞLEMİ
+    // ============================================
+
     private fun register() {
         val state = _registerState.value
 
         viewModelScope.launch {
             _registerState.update { it.copy(isLoading = true) }
+
+            val membershipTypeId = if (state.accountType == AccountType.CORPORATE) 2 else 1
+
+            // Kabul edilen sözleşmelerin ID'lerini al
+            val acceptedContractIds = state.contracts
+                .filter { it.isAccepted }
+                .map { it.contract.id }
 
             val request = RegisterRequest(
                 name = state.name,
@@ -255,14 +432,17 @@ class AuthViewModel : ViewModel() {
                 email = state.email,
                 password = state.password,
                 phone = state.phone,
-                gsm = state.gsm,
-                adres = state.address,
-                sehir = state.city,
-                ilce = state.district,
+                gsm = state.phone,
+                address = state.address,
+                address2 = state.address2,
+                city = state.city,
+                district = state.district,
                 zipcode = state.zipCode,
-                ulke = state.country,
+                country = state.country,
                 companyname = state.companyName,
-                vergino = state.taxNumber
+                vergino = state.taxNumber,
+                membershipType = membershipTypeId,
+                contracts = acceptedContractIds
             )
 
             val result = authRepository.register(request)
@@ -296,7 +476,6 @@ class AuthViewModel : ViewModel() {
     fun sendPasswordResetEmail() {
         val state = _forgotPasswordState.value
 
-        // Validation
         if (state.email.isBlank()) {
             _forgotPasswordState.update { it.copy(emailError = "E-posta adresi gerekli") }
             return

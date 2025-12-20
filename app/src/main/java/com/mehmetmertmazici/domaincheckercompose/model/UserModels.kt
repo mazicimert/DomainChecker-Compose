@@ -22,22 +22,22 @@ data class UserInfo(
     @SerializedName("companyname")
     val companyName: String?,
 
-    @SerializedName("adres")
+    @SerializedName("address")
     val address: String?,
 
-    @SerializedName("adres2")
+    @SerializedName("address2")
     val address2: String?,
 
-    @SerializedName("sehir")
+    @SerializedName("city")
     val city: String?,
 
-    @SerializedName("ilce")
+    @SerializedName("district")
     val district: String?,
 
     @SerializedName("zipcode")
     val zipCode: String?,
 
-    @SerializedName("ulke")
+    @SerializedName("country")
     val country: String?,
 
     @SerializedName("phone")
