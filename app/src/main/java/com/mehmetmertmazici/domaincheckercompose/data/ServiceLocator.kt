@@ -5,6 +5,7 @@ import android.content.Context
 import com.mehmetmertmazici.domaincheckercompose.data.repository.AuthRepository
 import com.mehmetmertmazici.domaincheckercompose.data.repository.CartRepository
 import com.mehmetmertmazici.domaincheckercompose.data.repository.InfoRepository
+import com.mehmetmertmazici.domaincheckercompose.data.repository.LocationRepository
 import com.mehmetmertmazici.domaincheckercompose.data.repository.UserRepository
 
 /**
@@ -33,6 +34,8 @@ object ServiceLocator {
     private var _userRepository: UserRepository? = null
     private var _cartRepository: CartRepository? = null
     private var _infoRepository: InfoRepository? = null
+    private var _locationRepository: LocationRepository? = null
+
 
     // ============================================
     // INITIALIZATION
@@ -82,6 +85,14 @@ object ServiceLocator {
             return _cartRepository!!
         }
 
+    val locationRepository: LocationRepository
+        get() {
+            if (_locationRepository == null) {
+                _locationRepository = LocationRepository(context)
+            }
+            return _locationRepository!!
+        }
+
     val infoRepository: InfoRepository
         get() {
             if (_infoRepository == null) {
@@ -100,5 +111,6 @@ object ServiceLocator {
         _userRepository = null
         _cartRepository = null
         _infoRepository = null
+        _locationRepository = null
     }
 }

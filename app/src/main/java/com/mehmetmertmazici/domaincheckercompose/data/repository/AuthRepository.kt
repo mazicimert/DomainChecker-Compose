@@ -51,6 +51,7 @@ class AuthRepository(
                 val response = apiService.register(
                     name = request.name,
                     surname = request.surname,
+                    citizen = request.citizen,
                     companyName = request.companyname,
                     email = request.email,
                     address = request.address,

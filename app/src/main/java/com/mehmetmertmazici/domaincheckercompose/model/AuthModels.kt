@@ -52,6 +52,7 @@ enum class AccountType(val value: String, val displayName: String) {
 data class RegisterRequest(
     val name: String,
     val surname: String,
+    val citizen: String = "",
     val companyname: String = "",
     val email: String,
     val address: String,

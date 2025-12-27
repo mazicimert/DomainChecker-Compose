@@ -44,6 +44,7 @@ interface ApiService {
     suspend fun register(
         @Field("name") name: String,
         @Field("surname") surname: String,
+        @Field("citizen") citizen: String,
         @Field("companyname") companyName: String,
         @Field("email") email: String,
         @Field("address") address: String,
