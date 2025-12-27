@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -40,10 +41,7 @@ import com.mehmetmertmazici.domaincheckercompose.ui.theme.DarkColors
 import com.mehmetmertmazici.domaincheckercompose.ui.theme.LightColors
 import com.mehmetmertmazici.domaincheckercompose.viewmodel.AuthEffect
 import com.mehmetmertmazici.domaincheckercompose.viewmodel.AuthViewModel
-import com.mehmetmertmazici.domaincheckercompose.viewmodel.Country
-import com.mehmetmertmazici.domaincheckercompose.viewmodel.InvoiceDeliveryType
 import com.mehmetmertmazici.domaincheckercompose.viewmodel.RegisterUiState
-import com.mehmetmertmazici.domaincheckercompose.viewmodel.SecurityQuestion
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -58,6 +56,10 @@ fun RegisterScreen(
     val uiState by viewModel.registerState.collectAsState()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadCountries()
+    }
 
     // Effects
     LaunchedEffect(key1 = true) {
@@ -85,26 +87,6 @@ fun RegisterScreen(
             onScrolledToEnd = { viewModel.onDialogScrolledToEnd() },
             onAccept = { viewModel.acceptContractFromDialog() },
             onDismiss = { viewModel.closeContractDialog() },
-            isDarkTheme = isDarkTheme
-        )
-    }
-
-    // Country Picker Dialog
-    if (uiState.showCountryPicker) {
-        CountryPickerDialog(
-            selectedCountryCode = uiState.country,
-            onCountrySelected = { viewModel.updateCountry(it) },
-            onDismiss = { viewModel.hideCountryPicker() },
-            isDarkTheme = isDarkTheme
-        )
-    }
-
-    // Security Question Picker Dialog
-    if (uiState.showSecurityQuestionPicker) {
-        SecurityQuestionPickerDialog(
-            selectedQuestion = uiState.securityQuestion,
-            onQuestionSelected = { viewModel.updateSecurityQuestion(it) },
-            onDismiss = { viewModel.hideSecurityQuestionPicker() },
             isDarkTheme = isDarkTheme
         )
     }
@@ -160,7 +142,7 @@ fun RegisterScreen(
             // Progress Indicator
             StepProgressIndicator(
                 currentStep = uiState.currentStep,
-                totalSteps = uiState.totalSteps,
+                totalSteps = 3,
                 colors = colors
             )
 
@@ -172,36 +154,29 @@ fun RegisterScreen(
                     .padding(24.dp)
             ) {
                 // Step Title
-                val stepTitle = getStepTitle(uiState.currentStep, uiState.isCorporate)
-                val stepIcon = getStepIcon(uiState.currentStep, uiState.isCorporate)
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                ) {
-                    Icon(
-                        imageVector = stepIcon,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = stepTitle,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Text(
-                            text = "Adım ${uiState.currentStep}/${uiState.totalSteps}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.7f)
-                        )
-                    }
+                val stepTitle = when (uiState.currentStep) {
+                    1 -> "Kişisel Bilgiler"
+                    2 -> "İletişim Bilgileri"
+                    3 -> "Adres Bilgileri"
+                    else -> ""
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stepTitle,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Adım ${uiState.currentStep}/3",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.7f)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // Form Card
                 Card(
@@ -215,18 +190,6 @@ fun RegisterScreen(
                             .fillMaxWidth()
                             .padding(24.dp)
                     ) {
-                        // İlk aşamada hesap türü seçimi
-                        if (uiState.currentStep == 1) {
-                            AccountTypeSelector(
-                                selectedType = uiState.accountType,
-                                onTypeSelected = { viewModel.updateAccountType(it) },
-                                colors = colors
-                            )
-                            Spacer(modifier = Modifier.height(24.dp))
-                            HorizontalDivider(color = colors.OutlineVariant)
-                            Spacer(modifier = Modifier.height(24.dp))
-                        }
-
                         AnimatedContent(
                             targetState = uiState.currentStep,
                             transitionSpec = {
@@ -240,11 +203,10 @@ fun RegisterScreen(
                             },
                             label = "step_animation"
                         ) { step ->
-                            when {
-                                step == 1 -> Step1PersonalInfo(viewModel, uiState, colors)
-                                step == 2 -> Step2InvoiceAddress(viewModel, uiState, colors)
-                                step == 3 && uiState.isCorporate -> Step3CorporateInfo(viewModel, uiState, colors)
-                                (step == 3 && !uiState.isCorporate) || step == 4 -> Step4Security(viewModel, uiState, colors)
+                            when (step) {
+                                1 -> Step1PersonalInfo(viewModel, uiState, colors)
+                                2 -> Step2ContactInfo(viewModel, uiState, colors)
+                                3 -> Step3AddressAndContracts(viewModel, uiState, colors)
                             }
                         }
 
@@ -257,7 +219,7 @@ fun RegisterScreen(
                         ) {
                             if (uiState.currentStep > 1) {
                                 OutlinedButton(
-                                    onClick = { viewModel.previousRegisterStep() },
+                                    onClick = viewModel::previousRegisterStep,
                                     modifier = Modifier.weight(1f),
                                     shape = MaterialTheme.shapes.large
                                 ) {
@@ -271,14 +233,11 @@ fun RegisterScreen(
                                 }
                             }
 
-                            val isLastStep = uiState.currentStep == uiState.totalSteps
-                            val buttonEnabled = !uiState.isLoading &&
-                                    (!isLastStep || uiState.allContractsAccepted)
-
                             Button(
-                                onClick = { viewModel.nextRegisterStep() },
+                                onClick = viewModel::nextRegisterStep,
                                 modifier = Modifier.weight(1f),
-                                enabled = buttonEnabled,
+                                enabled = !uiState.isLoading &&
+                                        (uiState.currentStep != 3 || uiState.allContractsAccepted),
                                 shape = MaterialTheme.shapes.large,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = colors.Primary
@@ -292,12 +251,12 @@ fun RegisterScreen(
                                     )
                                 } else {
                                     Text(
-                                        text = if (isLastStep) "Kayıt Ol" else "İleri",
+                                        text = if (uiState.currentStep == 3) "Kayıt Ol" else "İleri",
                                         fontWeight = FontWeight.Bold
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Icon(
-                                        imageVector = if (isLastStep)
+                                        imageVector = if (uiState.currentStep == 3)
                                             Icons.Default.Check else Icons.Default.ArrowForward,
                                         contentDescription = null,
                                         modifier = Modifier.size(18.dp)
@@ -328,30 +287,8 @@ fun RegisterScreen(
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(32.dp))
             }
         }
-    }
-}
-
-private fun getStepTitle(step: Int, isCorporate: Boolean): String {
-    return when {
-        step == 1 -> "Kişisel Bilgiler"
-        step == 2 -> "Fatura Adresi"
-        step == 3 && isCorporate -> "Ek Gerekli Bilgiler"
-        (step == 3 && !isCorporate) || step == 4 -> "Hesap Güvenliği"
-        else -> ""
-    }
-}
-
-private fun getStepIcon(step: Int, isCorporate: Boolean): androidx.compose.ui.graphics.vector.ImageVector {
-    return when {
-        step == 1 -> Icons.Default.Person
-        step == 2 -> Icons.Default.LocationOn
-        step == 3 && isCorporate -> Icons.Default.Business
-        (step == 3 && !isCorporate) || step == 4 -> Icons.Default.Security
-        else -> Icons.Default.Circle
     }
 }
 
@@ -361,169 +298,33 @@ private fun StepProgressIndicator(
     totalSteps: Int,
     colors: com.mehmetmertmazici.domaincheckercompose.ui.theme.AppColors
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp)
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            repeat(totalSteps) { index ->
-                val stepNumber = index + 1
-                val isCompleted = stepNumber < currentStep
-                val isCurrent = stepNumber == currentStep
+        repeat(totalSteps) { index ->
+            val stepNumber = index + 1
+            val isCompleted = stepNumber < currentStep
+            val isCurrent = stepNumber == currentStep
 
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(4.dp)
-                        .background(
-                            color = when {
-                                isCompleted -> colors.Success
-                                isCurrent -> Color.White
-                                else -> Color.White.copy(alpha = 0.3f)
-                            },
-                            shape = MaterialTheme.shapes.small
-                        )
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Step indicators with numbers
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            repeat(totalSteps) { index ->
-                val stepNumber = index + 1
-                val isCompleted = stepNumber < currentStep
-                val isCurrent = stepNumber == currentStep
-
-                Surface(
-                    modifier = Modifier.size(28.dp),
-                    shape = MaterialTheme.shapes.small,
-                    color = when {
-                        isCompleted -> colors.Success
-                        isCurrent -> Color.White
-                        else -> Color.White.copy(alpha = 0.3f)
-                    }
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        if (isCompleted) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        } else {
-                            Text(
-                                text = stepNumber.toString(),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isCurrent) colors.Primary else Color.White
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AccountTypeSelector(
-    selectedType: AccountType,
-    onTypeSelected: (AccountType) -> Unit,
-    colors: com.mehmetmertmazici.domaincheckercompose.ui.theme.AppColors
-) {
-    Column {
-        Text(
-            text = "Hesap Türü",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = colors.TextPrimary
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            AccountTypeChip(
-                title = "Bireysel",
-                icon = Icons.Default.Person,
-                isSelected = selectedType == AccountType.INDIVIDUAL,
-                onClick = { onTypeSelected(AccountType.INDIVIDUAL) },
-                colors = colors,
-                modifier = Modifier.weight(1f)
-            )
-
-            AccountTypeChip(
-                title = "Kurumsal",
-                icon = Icons.Default.Business,
-                isSelected = selectedType == AccountType.CORPORATE,
-                onClick = { onTypeSelected(AccountType.CORPORATE) },
-                colors = colors,
-                modifier = Modifier.weight(1f)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(4.dp)
+                    .background(
+                        color = when {
+                            isCompleted -> colors.Success
+                            isCurrent -> Color.White
+                            else -> Color.White.copy(alpha = 0.3f)
+                        },
+                        shape = MaterialTheme.shapes.small
+                    )
             )
         }
     }
 }
-
-@Composable
-private fun AccountTypeChip(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    colors: com.mehmetmertmazici.domaincheckercompose.ui.theme.AppColors,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier
-            .clip(MaterialTheme.shapes.large)
-            .clickable(onClick = onClick)
-            .then(
-                if (isSelected) {
-                    Modifier.border(2.dp, colors.Primary, MaterialTheme.shapes.large)
-                } else {
-                    Modifier.border(1.dp, colors.Outline, MaterialTheme.shapes.large)
-                }
-            ),
-        color = if (isSelected) colors.PrimaryLight else colors.Surface,
-        shape = MaterialTheme.shapes.large
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (isSelected) colors.Primary else colors.TextSecondary
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = title,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) colors.Primary else colors.TextPrimary
-            )
-        }
-    }
-}
-
-// ============================================
-// AŞAMA 1: KİŞİSEL BİLGİLER
-// ============================================
 
 @Composable
 private fun Step1PersonalInfo(
@@ -534,11 +335,90 @@ private fun Step1PersonalInfo(
     val focusManager = LocalFocusManager.current
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // İsim
+        // Account Type Selector
+        Text(
+            text = "Hesap Türü",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = colors.TextPrimary
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            AccountTypeChip(
+                title = "Bireysel",
+                icon = Icons.Default.Person,
+                isSelected = uiState.accountType == AccountType.INDIVIDUAL,
+                onClick = { viewModel.updateAccountType(AccountType.INDIVIDUAL) },
+                colors = colors,
+                modifier = Modifier.weight(1f)
+            )
+
+            AccountTypeChip(
+                title = "Kurumsal",
+                icon = Icons.Default.Business,
+                isSelected = uiState.accountType == AccountType.CORPORATE,
+                onClick = { viewModel.updateAccountType(AccountType.CORPORATE) },
+                colors = colors,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Kurumsal bilgiler
+        AnimatedVisibility(
+            visible = uiState.isCorporate,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = uiState.companyName,
+                    onValueChange = { viewModel.updateRegisterField("companyName", it) },
+                    label = { Text("Firma Adı *") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Business, null, tint = colors.Primary)
+                    },
+                    isError = uiState.errors["companyName"] != null,
+                    supportingText = uiState.errors["companyName"]?.let { { Text(it) } },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    ),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large
+                )
+
+                OutlinedTextField(
+                    value = uiState.taxNumber,
+                    onValueChange = { viewModel.updateRegisterField("taxNumber", it) },
+                    label = { Text("Vergi Numarası *") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Receipt, null, tint = colors.Primary)
+                    },
+                    isError = uiState.errors["taxNumber"] != null,
+                    supportingText = uiState.errors["taxNumber"]?.let { { Text(it) } },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    ),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large
+                )
+            }
+        }
+
+        // Name
         OutlinedTextField(
             value = uiState.name,
             onValueChange = { viewModel.updateRegisterField("name", it) },
-            label = { Text("İsim *") },
+            label = { Text("Ad *") },
             leadingIcon = {
                 Icon(Icons.Default.Person, null, tint = colors.Primary)
             },
@@ -553,11 +433,11 @@ private fun Step1PersonalInfo(
             shape = MaterialTheme.shapes.large
         )
 
-        // Soyisim
+        // Surname
         OutlinedTextField(
             value = uiState.surname,
             onValueChange = { viewModel.updateRegisterField("surname", it) },
-            label = { Text("Soyisim *") },
+            label = { Text("Soyad *") },
             leadingIcon = {
                 Icon(Icons.Default.Person, null, tint = colors.Primary)
             },
@@ -572,11 +452,11 @@ private fun Step1PersonalInfo(
             shape = MaterialTheme.shapes.large
         )
 
-        // E-posta
+        // Email
         OutlinedTextField(
             value = uiState.email,
             onValueChange = { viewModel.updateRegisterField("email", it) },
-            label = { Text("E-Posta Adresi *") },
+            label = { Text("E-posta *") },
             leadingIcon = {
                 Icon(Icons.Default.Email, null, tint = colors.Primary)
             },
@@ -594,422 +474,7 @@ private fun Step1PersonalInfo(
             shape = MaterialTheme.shapes.large
         )
 
-        // Telefon
-        OutlinedTextField(
-            value = uiState.phone,
-            onValueChange = { viewModel.updateRegisterField("phone", it) },
-            label = { Text("Telefon Numarası *") },
-            placeholder = { Text("5XX XXX XX XX") },
-            leadingIcon = {
-                Icon(Icons.Default.Phone, null, tint = colors.Primary)
-            },
-            isError = uiState.errors["phone"] != null,
-            supportingText = uiState.errors["phone"]?.let { { Text(it) } },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Phone,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            ),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large
-        )
-
-        // T.C. Kimlik Numarası (Opsiyonel - son alanda)
-        OutlinedTextField(
-            value = uiState.tcKimlik,
-            onValueChange = { viewModel.updateRegisterField("tcKimlik", it) },
-            label = { Text("T.C. Kimlik Numarası") },
-            leadingIcon = {
-                Icon(Icons.Default.Badge, null, tint = colors.Primary)
-            },
-            isError = uiState.errors["tcKimlik"] != null,
-            supportingText = {
-                if (uiState.errors["tcKimlik"] != null) {
-                    Text(uiState.errors["tcKimlik"]!!)
-                } else {
-                    Text("Türkiye için zorunlu, diğer ülkeler için opsiyonel")
-                }
-            },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = { focusManager.clearFocus() }
-            ),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large
-        )
-
-        // Bilgi kartı
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = colors.Info.copy(alpha = 0.1f)
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = null,
-                    tint = colors.Info,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "T.C. Kimlik numarası sadece Türkiye'de ikamet edenler için zorunludur.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.TextSecondary
-                )
-            }
-        }
-    }
-}
-
-// ============================================
-// AŞAMA 2: FATURA ADRESİ
-// ============================================
-
-@Composable
-private fun Step2InvoiceAddress(
-    viewModel: AuthViewModel,
-    uiState: RegisterUiState,
-    colors: com.mehmetmertmazici.domaincheckercompose.ui.theme.AppColors
-) {
-    val focusManager = LocalFocusManager.current
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // Firma Adı (Opsiyonel)
-        OutlinedTextField(
-            value = uiState.companyName,
-            onValueChange = { viewModel.updateRegisterField("companyName", it) },
-            label = { Text("Firma Adı (Opsiyonel)") },
-            leadingIcon = {
-                Icon(Icons.Default.Business, null, tint = colors.Primary)
-            },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            ),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large
-        )
-
-        // Adres
-        OutlinedTextField(
-            value = uiState.address,
-            onValueChange = { viewModel.updateRegisterField("address", it) },
-            label = { Text("Adres *") },
-            leadingIcon = {
-                Icon(Icons.Default.Home, null, tint = colors.Primary)
-            },
-            isError = uiState.errors["address"] != null,
-            supportingText = uiState.errors["address"]?.let { { Text(it) } },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            ),
-            maxLines = 2,
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large
-        )
-
-        // Adres Devamı
-        OutlinedTextField(
-            value = uiState.address2,
-            onValueChange = { viewModel.updateRegisterField("address2", it) },
-            label = { Text("Adres Devamı") },
-            leadingIcon = {
-                Icon(Icons.Default.Home, null, tint = colors.Primary)
-            },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            ),
-            maxLines = 2,
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large
-        )
-
-        // Ülke Seçimi
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { viewModel.showCountryPicker() }
-                .border(
-                    width = 1.dp,
-                    color = if (uiState.errors["country"] != null) colors.Error else colors.Outline,
-                    shape = MaterialTheme.shapes.large
-                ),
-            shape = MaterialTheme.shapes.large,
-            color = Color.Transparent
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Public,
-                    contentDescription = null,
-                    tint = colors.Primary
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Ülke *",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.TextSecondary
-                    )
-                    Text(
-                        text = uiState.selectedCountryName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = colors.TextPrimary
-                    )
-                }
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null,
-                    tint = colors.TextSecondary
-                )
-            }
-        }
-
-        // Şehir / İlçe
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            OutlinedTextField(
-                value = uiState.city,
-                onValueChange = { viewModel.updateRegisterField("city", it) },
-                label = { Text("Şehir *") },
-                isError = uiState.errors["city"] != null,
-                supportingText = uiState.errors["city"]?.let { { Text(it) } },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Right) }
-                ),
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-                shape = MaterialTheme.shapes.large
-            )
-
-            OutlinedTextField(
-                value = uiState.district,
-                onValueChange = { viewModel.updateRegisterField("district", it) },
-                label = { Text("İlçe *") },
-                isError = uiState.errors["district"] != null,
-                supportingText = uiState.errors["district"]?.let { { Text(it) } },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                ),
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-                shape = MaterialTheme.shapes.large
-            )
-        }
-
-        // Posta Kodu
-        OutlinedTextField(
-            value = uiState.zipCode,
-            onValueChange = { viewModel.updateRegisterField("zipCode", it) },
-            label = { Text("Posta Kodu *") },
-            leadingIcon = {
-                Icon(Icons.Default.MarkunreadMailbox, null, tint = colors.Primary)
-            },
-            isError = uiState.errors["zipCode"] != null,
-            supportingText = uiState.errors["zipCode"]?.let { { Text(it) } },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = { focusManager.clearFocus() }
-            ),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large
-        )
-    }
-}
-
-// ============================================
-// AŞAMA 3: EK GEREKLİ BİLGİLER (KURUMSAL)
-// ============================================
-
-@Composable
-private fun Step3CorporateInfo(
-    viewModel: AuthViewModel,
-    uiState: RegisterUiState,
-    colors: com.mehmetmertmazici.domaincheckercompose.ui.theme.AppColors
-) {
-    val focusManager = LocalFocusManager.current
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // Bilgi kartı
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = colors.Warning.copy(alpha = 0.1f)
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Business,
-                    contentDescription = null,
-                    tint = colors.Warning,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Kurumsal hesap için fatura bilgilerinizi girin",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.TextSecondary
-                )
-            }
-        }
-
-        // Vergi Numarası
-        OutlinedTextField(
-            value = uiState.taxNumber,
-            onValueChange = { viewModel.updateRegisterField("taxNumber", it) },
-            label = { Text("Vergi Numarası *") },
-            leadingIcon = {
-                Icon(Icons.Default.Receipt, null, tint = colors.Primary)
-            },
-            isError = uiState.errors["taxNumber"] != null,
-            supportingText = uiState.errors["taxNumber"]?.let { { Text(it) } },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            ),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large
-        )
-
-        // Vergi Dairesi
-        OutlinedTextField(
-            value = uiState.taxOffice,
-            onValueChange = { viewModel.updateRegisterField("taxOffice", it) },
-            label = { Text("Vergi Dairesi *") },
-            leadingIcon = {
-                Icon(Icons.Default.AccountBalance, null, tint = colors.Primary)
-            },
-            isError = uiState.errors["taxOffice"] != null,
-            supportingText = uiState.errors["taxOffice"]?.let { { Text(it) } },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            ),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large
-        )
-
-        // Fatura Ünvanı
-        OutlinedTextField(
-            value = uiState.invoiceTitle,
-            onValueChange = { viewModel.updateRegisterField("invoiceTitle", it) },
-            label = { Text("Fatura Ünvanı *") },
-            leadingIcon = {
-                Icon(Icons.Default.Description, null, tint = colors.Primary)
-            },
-            isError = uiState.errors["invoiceTitle"] != null,
-            supportingText = uiState.errors["invoiceTitle"]?.let { { Text(it) } },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(
-                onDone = { focusManager.clearFocus() }
-            ),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large
-        )
-
-        // Fatura Teslimat Seçimi
-        Text(
-            text = "Fatura Teslimatı",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = colors.TextPrimary
-        )
-
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            InvoiceDeliveryType.entries.forEach { type ->
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.medium)
-                        .clickable { viewModel.updateInvoiceDeliveryType(type) }
-                        .border(
-                            width = if (uiState.invoiceDeliveryType == type) 2.dp else 1.dp,
-                            color = if (uiState.invoiceDeliveryType == type) colors.Primary else colors.Outline,
-                            shape = MaterialTheme.shapes.medium
-                        ),
-                    color = if (uiState.invoiceDeliveryType == type)
-                        colors.PrimaryLight.copy(alpha = 0.3f) else Color.Transparent
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = uiState.invoiceDeliveryType == type,
-                            onClick = { viewModel.updateInvoiceDeliveryType(type) },
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = colors.Primary
-                            )
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = type.displayName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = colors.TextPrimary
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-// ============================================
-// AŞAMA 4: HESAP GÜVENLİĞİ
-// ============================================
-
-@Composable
-private fun Step4Security(
-    viewModel: AuthViewModel,
-    uiState: RegisterUiState,
-    colors: com.mehmetmertmazici.domaincheckercompose.ui.theme.AppColors
-) {
-    val focusManager = LocalFocusManager.current
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // Şifre
+        // Password
         OutlinedTextField(
             value = uiState.password,
             onValueChange = { viewModel.updateRegisterField("password", it) },
@@ -1018,7 +483,7 @@ private fun Step4Security(
                 Icon(Icons.Default.Lock, null, tint = colors.Primary)
             },
             trailingIcon = {
-                IconButton(onClick = { viewModel.toggleRegisterPasswordVisibility() }) {
+                IconButton(onClick = viewModel::toggleRegisterPasswordVisibility) {
                     Icon(
                         imageVector = if (uiState.isPasswordVisible)
                             Icons.Default.VisibilityOff else Icons.Default.Visibility,
@@ -1042,7 +507,7 @@ private fun Step4Security(
             shape = MaterialTheme.shapes.large
         )
 
-        // Şifre Tekrar
+        // Password Confirm
         OutlinedTextField(
             value = uiState.passwordConfirm,
             onValueChange = { viewModel.updateRegisterField("passwordConfirm", it) },
@@ -1056,84 +521,43 @@ private fun Step4Security(
             supportingText = uiState.errors["passwordConfirm"]?.let { { Text(it) } },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Next
+                imeAction = ImeAction.Done
             ),
             keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                onDone = { focusManager.clearFocus() }
             ),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.large
         )
+    }
+}
 
-        HorizontalDivider(color = colors.OutlineVariant)
 
-        // Güvenlik Sorusu Seçimi
-        Text(
-            text = "Güvenlik Sorusu *",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = colors.TextPrimary
-        )
+@Composable
+private fun Step2ContactInfo(
+    viewModel: AuthViewModel,
+    uiState: RegisterUiState,
+    colors: com.mehmetmertmazici.domaincheckercompose.ui.theme.AppColors
+) {
+    val focusManager = LocalFocusManager.current
 
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { viewModel.showSecurityQuestionPicker() }
-                .border(
-                    width = 1.dp,
-                    color = if (uiState.errors["securityQuestion"] != null) colors.Error else colors.Outline,
-                    shape = MaterialTheme.shapes.large
-                ),
-            shape = MaterialTheme.shapes.large,
-            color = Color.Transparent
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.QuestionAnswer,
-                    contentDescription = null,
-                    tint = colors.Primary
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = uiState.securityQuestion?.question ?: "Güvenlik sorusu seçin",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (uiState.securityQuestion != null)
-                        colors.TextPrimary else colors.TextSecondary,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null,
-                    tint = colors.TextSecondary
-                )
-            }
-        }
-
-        if (uiState.errors["securityQuestion"] != null) {
-            Text(
-                text = uiState.errors["securityQuestion"]!!,
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.Error
-            )
-        }
-
-        // Güvenlik Sorusu Yanıtı
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // Phone
         OutlinedTextField(
-            value = uiState.securityAnswer,
-            onValueChange = { viewModel.updateRegisterField("securityAnswer", it) },
-            label = { Text("Güvenlik Sorusu Yanıtı *") },
+            value = uiState.phone,
+            onValueChange = { viewModel.updateRegisterField("phone", it) },
+            label = { Text("Telefon *") },
+            placeholder = { Text("5XX XXX XX XX") },
             leadingIcon = {
-                Icon(Icons.Default.Edit, null, tint = colors.Primary)
+                Icon(Icons.Default.Phone, null, tint = colors.Primary)
             },
-            isError = uiState.errors["securityAnswer"] != null,
-            supportingText = uiState.errors["securityAnswer"]?.let { { Text(it) } },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            isError = uiState.errors["phone"] != null,
+            supportingText = uiState.errors["phone"]?.let { { Text(it) } },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Phone,
+                imeAction = ImeAction.Done
+            ),
             keyboardActions = KeyboardActions(
                 onDone = { focusManager.clearFocus() }
             ),
@@ -1142,12 +566,198 @@ private fun Step4Security(
             shape = MaterialTheme.shapes.large
         )
 
-        HorizontalDivider(color = colors.OutlineVariant)
+        // Info Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = colors.PrimaryLight.copy(alpha = 0.3f)
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = colors.Primary
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Telefon numaranız hesap güvenliği ve bildirimler için kullanılacaktır.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.TextSecondary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun Step3AddressAndContracts(
+    viewModel: AuthViewModel,
+    uiState: RegisterUiState,
+    colors: com.mehmetmertmazici.domaincheckercompose.ui.theme.AppColors
+) {
+    val focusManager = LocalFocusManager.current
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // Address
+        OutlinedTextField(
+            value = uiState.address,
+            onValueChange = { viewModel.updateRegisterField("address", it) },
+            label = { Text("Adres *") },
+            leadingIcon = {
+                Icon(Icons.Default.Home, null, tint = colors.Primary)
+            },
+            isError = uiState.errors["address"] != null,
+            supportingText = uiState.errors["address"]?.let { { Text(it) } },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+            ),
+            maxLines = 2,
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large
+        )
+
+        // ÜLKE SEÇİCİ
+        LocationDropdownField(
+            label = "Ülke *",
+            selectedText = uiState.selectedCountry?.name ?: "Ülke Seçin",
+            isExpanded = uiState.isCountryDropdownExpanded,
+            isLoading = uiState.isLoadingCountries,
+            isError = uiState.errors["country"] != null,
+            errorText = uiState.errors["country"],
+            onExpandChange = { viewModel.toggleCountryDropdown() },
+            colors = colors,
+            leadingIcon = Icons.Default.Public,
+            enabled = true
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 300.dp)
+            ) {
+                items(uiState.countries) { country ->
+                    DropdownMenuItem(
+                        text = { Text(country.name) },
+                        onClick = { viewModel.selectCountry(country) },
+                        leadingIcon = {
+                            Text(
+                                text = getFlagEmoji(country.iso2),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    )
+                }
+            }
+        }
+
+        // ŞEHİR VE İLÇE SEÇİCİLERİ
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Şehir/İl Seçici
+            Box(modifier = Modifier.weight(1f)) {
+                LocationDropdownField(
+                    label = "Şehir *",
+                    selectedText = uiState.selectedState?.name ?: "Şehir Seçin",
+                    isExpanded = uiState.isStateDropdownExpanded,
+                    isLoading = uiState.isLoadingStates,
+                    isError = uiState.errors["city"] != null,
+                    errorText = uiState.errors["city"],
+                    onExpandChange = {
+                        if (uiState.selectedCountry != null && uiState.states.isNotEmpty()) {
+                            viewModel.toggleStateDropdown()
+                        }
+                    },
+                    enabled = uiState.selectedCountry != null && uiState.states.isNotEmpty(),
+                    colors = colors,
+                    leadingIcon = Icons.Default.LocationCity
+                ) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 300.dp)
+                    ) {
+                        items(uiState.states) { state ->
+                            DropdownMenuItem(
+                                text = { Text(state.name) },
+                                onClick = { viewModel.selectState(state) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // İlçe Seçici
+            Box(modifier = Modifier.weight(1f)) {
+                LocationDropdownField(
+                    label = "İlçe *",
+                    selectedText = uiState.selectedCity?.name ?: "İlçe Seçin",
+                    isExpanded = uiState.isCityDropdownExpanded,
+                    isLoading = uiState.isLoadingCities,
+                    isError = uiState.errors["district"] != null,
+                    errorText = uiState.errors["district"],
+                    onExpandChange = {
+                        if (uiState.selectedState != null && uiState.cities.isNotEmpty()) {
+                            viewModel.toggleCityDropdown()
+                        }
+                    },
+                    enabled = uiState.selectedState != null && uiState.cities.isNotEmpty(),
+                    colors = colors,
+                    leadingIcon = Icons.Default.Place
+                ) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 300.dp)
+                    ) {
+                        items(uiState.cities) { city ->
+                            DropdownMenuItem(
+                                text = { Text(city.name) },
+                                onClick = { viewModel.selectCity(city) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // POSTA KODU
+        OutlinedTextField(
+            value = uiState.zipCode,
+            onValueChange = { viewModel.updateRegisterField("zipCode", it) },
+            label = { Text("Posta Kodu *") },
+            leadingIcon = {
+                Icon(Icons.Default.MarkunreadMailbox, null, tint = colors.Primary)
+            },
+            isError = uiState.errors["zipCode"] != null,
+            supportingText = uiState.errors["zipCode"]?.let { { Text(it) } },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = { focusManager.clearFocus() }
+            ),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large
+        )
 
         // Sözleşmeler Bölümü
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider(color = colors.OutlineVariant)
+        Spacer(modifier = Modifier.height(8.dp))
+
         Text(
-            text = "Kullanım Koşulları *",
-            style = MaterialTheme.typography.titleSmall,
+            text = "Sözleşmeler*",
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = colors.TextPrimary
         )
@@ -1214,11 +824,137 @@ private fun Step4Security(
             if (uiState.contracts.isNotEmpty() && !uiState.allContractsAccepted) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Devam etmek için tüm sözleşmeleri okuyup onaylamanız gerekmektedir",
+                    text = "Lütfen tüm sözleşmeleri okuyup onaylayınız",
                     style = MaterialTheme.typography.bodySmall,
-                    color = colors.Warning
+                    color = colors.TextSecondary
                 )
             }
+        }
+    }
+}
+
+
+// YENİ EKLENEN: LocationDropdownField Composable
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LocationDropdownField(
+    label: String,
+    selectedText: String,
+    isExpanded: Boolean,
+    isLoading: Boolean,
+    isError: Boolean,
+    errorText: String?,
+    onExpandChange: () -> Unit,
+    colors: com.mehmetmertmazici.domaincheckercompose.ui.theme.AppColors,
+    leadingIcon: ImageVector,
+    enabled: Boolean = true,
+    dropdownContent: @Composable () -> Unit
+) {
+    ExposedDropdownMenuBox(
+        expanded = isExpanded && enabled,
+        onExpandedChange = { if (enabled && !isLoading) onExpandChange() }
+    ) {
+        OutlinedTextField(
+            value = selectedText,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
+            leadingIcon = {
+                Icon(
+                    leadingIcon,
+                    null,
+                    tint = if (enabled) colors.Primary else colors.Outline
+                )
+            },
+            trailingIcon = {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = colors.Primary
+                    )
+                } else {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded)
+                }
+            },
+            isError = isError,
+            supportingText = errorText?.let { { Text(it) } },
+            enabled = enabled,
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
+            shape = MaterialTheme.shapes.large,
+            colors = OutlinedTextFieldDefaults.colors(
+                disabledTextColor = colors.TextSecondary,
+                disabledBorderColor = colors.Outline,
+                disabledLeadingIconColor = colors.Outline,
+                disabledLabelColor = colors.TextSecondary
+            )
+        )
+
+        ExposedDropdownMenu(
+            expanded = isExpanded && enabled,
+            onDismissRequest = onExpandChange
+        ) {
+            dropdownContent()
+        }
+    }
+}
+
+// YENİ EKLENEN: Bayrak Emoji Helper
+private fun getFlagEmoji(countryCode: String): String {
+    if (countryCode.length != 2) return "🏳️"
+
+    val firstChar = Character.codePointAt(countryCode.uppercase(), 0) - 0x41 + 0x1F1E6
+    val secondChar = Character.codePointAt(countryCode.uppercase(), 1) - 0x41 + 0x1F1E6
+
+    return String(Character.toChars(firstChar)) + String(Character.toChars(secondChar))
+}
+
+// ============================================
+// AccountTypeChip - AYNI KALIYOR
+// ============================================
+@Composable
+private fun AccountTypeChip(
+    title: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    colors: com.mehmetmertmazici.domaincheckercompose.ui.theme.AppColors,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .border(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = if (isSelected) colors.Primary else colors.Outline,
+                shape = RoundedCornerShape(12.dp)
+            ),
+        color = if (isSelected) colors.PrimaryLight.copy(alpha = 0.2f) else colors.Surface
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isSelected) colors.Primary else colors.TextSecondary,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                color = if (isSelected) colors.Primary else colors.TextSecondary
+            )
         }
     }
 }
@@ -1250,7 +986,7 @@ private fun ContractCheckboxItem(
         ) {
             Checkbox(
                 checked = isAccepted,
-                onCheckedChange = null,
+                onCheckedChange = null, // Click handled by Surface
                 colors = CheckboxDefaults.colors(
                     checkedColor = colors.Success,
                     uncheckedColor = colors.Outline
@@ -1282,183 +1018,6 @@ private fun ContractCheckboxItem(
     }
 }
 
-// ============================================
-// DİALOGLAR
-// ============================================
-
-@Composable
-private fun CountryPickerDialog(
-    selectedCountryCode: String,
-    onCountrySelected: (String) -> Unit,
-    onDismiss: () -> Unit,
-    isDarkTheme: Boolean
-) {
-    val colors = if (isDarkTheme) DarkColors else LightColors
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .fillMaxHeight(0.7f),
-            shape = RoundedCornerShape(16.dp),
-            color = colors.CardBackground
-        ) {
-            Column {
-                // Header
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Ülke Seçin",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.TextPrimary
-                    )
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Kapat",
-                            tint = colors.TextSecondary
-                        )
-                    }
-                }
-
-                HorizontalDivider(color = colors.OutlineVariant)
-
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(8.dp)
-                ) {
-                    items(Country.COUNTRIES) { country ->
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onCountrySelected(country.code) },
-                            color = if (country.code == selectedCountryCode)
-                                colors.PrimaryLight.copy(alpha = 0.3f) else Color.Transparent
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = country.name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = colors.TextPrimary,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                if (country.code == selectedCountryCode) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = colors.Primary
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SecurityQuestionPickerDialog(
-    selectedQuestion: SecurityQuestion?,
-    onQuestionSelected: (SecurityQuestion) -> Unit,
-    onDismiss: () -> Unit,
-    isDarkTheme: Boolean
-) {
-    val colors = if (isDarkTheme) DarkColors else LightColors
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .wrapContentHeight(),
-            shape = RoundedCornerShape(16.dp),
-            color = colors.CardBackground
-        ) {
-            Column {
-                // Header
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Güvenlik Sorusu Seçin",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.TextPrimary
-                    )
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Kapat",
-                            tint = colors.TextSecondary
-                        )
-                    }
-                }
-
-                HorizontalDivider(color = colors.OutlineVariant)
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                ) {
-                    SecurityQuestion.entries.forEach { question ->
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onQuestionSelected(question) },
-                            color = if (question == selectedQuestion)
-                                colors.PrimaryLight.copy(alpha = 0.3f) else Color.Transparent
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = question.question,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = colors.TextPrimary,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                if (question == selectedQuestion) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = colors.Primary
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 @Composable
 private fun ContractDialog(
     contract: Contract,
@@ -1479,6 +1038,7 @@ private fun ContractDialog(
                 onScrolledToEnd()
             }
         } else if (scrollState.maxValue == 0) {
+            // İçerik kısa, scroll gerekmiyor
             onScrolledToEnd()
         }
     }
@@ -1539,8 +1099,9 @@ private fun ContractDialog(
                             .verticalScroll(scrollState)
                             .padding(16.dp)
                     ) {
+                        // HTML içeriği plain text olarak göster
                         val plainText = contract.content
-                            .replace(Regex("<[^>]*>"), "")
+                            .replace(Regex("<[^>]*>"), "") // HTML tag'lerini kaldır
                             .replace("&nbsp;", " ")
                             .replace("&amp;", "&")
                             .replace("&lt;", "<")
