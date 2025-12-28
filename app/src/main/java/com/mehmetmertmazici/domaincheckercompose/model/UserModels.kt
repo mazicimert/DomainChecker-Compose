@@ -19,7 +19,7 @@ data class UserInfo(
     @SerializedName("email")
     val email: String?,
 
-    @SerializedName("companyname")
+    @SerializedName("company_name")
     val companyName: String?,
 
     @SerializedName("address")

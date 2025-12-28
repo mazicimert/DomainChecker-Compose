@@ -1,13 +1,18 @@
-package com.mehmetmertmazici.domaincheckercompose.data.repository
+package com.mehmetmertmazici.domaincheckercompose.data
 
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.mehmetmertmazici.domaincheckercompose.model.City
 import com.mehmetmertmazici.domaincheckercompose.model.Country
-import com.mehmetmertmazici.domaincheckercompose.model.State
+import com.mehmetmertmazici.domaincheckercompose.model.District
+import com.mehmetmertmazici.domaincheckercompose.model.DistrictJsonWrapper
+import com.mehmetmertmazici.domaincheckercompose.model.Province
+import com.mehmetmertmazici.domaincheckercompose.model.ProvinceJsonWrapper
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+
 
 class LocationRepository(private val context: Context) {
 
@@ -15,80 +20,215 @@ class LocationRepository(private val context: Context) {
 
     // Cache
     private var cachedCountries: List<Country>? = null
-    private var cachedStates: List<State>? = null
-    private var cachedCities: List<City>? = null
+    private var cachedProvinces: List<Province>? = null
+    private var cachedDistricts: List<District>? = null
 
+    // ============================================
+    // PUBLIC API
+    // ============================================
 
-     //Tüm ülkeleri yükle
+    /**
+     * Tüm lokasyon verilerini paralel olarak yükler
+     */
+    suspend fun loadAllLocationData(): Result<Triple<List<Country>, List<Province>, List<District>>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                coroutineScope {
+                    val countriesDeferred = async { loadCountries() }
+                    val provincesDeferred = async { loadProvinces() }
+                    val districtsDeferred = async { loadDistricts() }
 
-    suspend fun getCountries(): Result<List<Country>> = withContext(Dispatchers.IO) {
-        try {
-            cachedCountries?.let { return@withContext Result.success(it) }
+                    val countries = countriesDeferred.await().getOrThrow()
+                    val provinces = provincesDeferred.await().getOrThrow()
+                    val districts = districtsDeferred.await().getOrThrow()
 
-            val jsonString = context.assets.open("countries.json").bufferedReader().use { it.readText() }
-            val type = object : TypeToken<List<Country>>() {}.type
-            val countries: List<Country> = gson.fromJson(jsonString, type)
-            cachedCountries = countries.sortedBy { it.name }
-            Result.success(cachedCountries!!)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    // Seçilen ülkeye göre eyalet/illeri getir
-    suspend fun getStatesByCountry(countryId: Int): Result<List<State>> = withContext(Dispatchers.IO) {
-        try {
-            // Cache yoksa yükle
-            if (cachedStates == null) {
-                val jsonString = context.assets.open("states.json").bufferedReader().use { it.readText() }
-                val type = object : TypeToken<List<State>>() {}.type
-                cachedStates = gson.fromJson(jsonString, type)
+                    Result.success(Triple(countries, provinces, districts))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
             }
-
-            val filteredStates = cachedStates!!
-                .filter { it.countryId == countryId }
-                .sortedBy { it.name }
-
-            Result.success(filteredStates)
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
 
+    /**
+     * Ülkeleri yükler
+     */
+    suspend fun loadCountries(forceRefresh: Boolean = false): Result<List<Country>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!forceRefresh && cachedCountries != null) {
+                    return@withContext Result.success(cachedCountries!!)
+                }
 
-     //Seçilen eyalet/ile göre şehir/ilçeleri getir
-    suspend fun getCitiesByState(stateId: Int): Result<List<City>> = withContext(Dispatchers.IO) {
-        try {
-            // Cache yoksa yükle
-            if (cachedCities == null) {
-                val jsonString = context.assets.open("cities.json").bufferedReader().use { it.readText() }
-                val type = object : TypeToken<List<City>>() {}.type
-                cachedCities = gson.fromJson(jsonString, type)
+                val jsonString = readAssetFile("countries.json")
+                val type = object : TypeToken<List<Country>>() {}.type
+                val countries: List<Country> = gson.fromJson(jsonString, type)
+
+                // Türkiye'yi en üste al, sonra alfabetik sırala
+                val sortedCountries = countries.sortedWith(compareBy(
+                    { it.iso2 != "TR" }, // TR en üstte
+                    { it.name }          // Sonra alfabetik
+                ))
+
+                cachedCountries = sortedCountries
+                Result.success(sortedCountries)
+            } catch (e: Exception) {
+                Result.failure(Exception("Ülkeler yüklenemedi: ${e.message}"))
             }
-
-            val filteredCities = cachedCities!!
-                .filter { it.stateId == stateId }
-                .sortedBy { it.name }
-
-            Result.success(filteredCities)
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
 
-    // Ülke koduna göre ülke bul
-    suspend fun getCountryByCode(iso2: String): Country? = withContext(Dispatchers.IO) {
-        if (cachedCountries == null) {
-            getCountries()
+    /**
+     * Türkiye illerini yükler
+     */
+    suspend fun loadProvinces(forceRefresh: Boolean = false): Result<List<Province>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!forceRefresh && cachedProvinces != null) {
+                    return@withContext Result.success(cachedProvinces!!)
+                }
+
+                val jsonString = readAssetFile("il.json")
+                val provinces = parsePhpMyAdminJson<Province>(jsonString)
+
+                // Alfabetik sırala
+                val sortedProvinces = provinces.sortedBy { it.name }
+
+                cachedProvinces = sortedProvinces
+                Result.success(sortedProvinces)
+            } catch (e: Exception) {
+                Result.failure(Exception("İller yüklenemedi: ${e.message}"))
+            }
         }
-        cachedCountries?.find { it.iso2 == iso2 }
     }
 
+    /**
+     * Türkiye ilçelerini yükler
+     */
+    suspend fun loadDistricts(forceRefresh: Boolean = false): Result<List<District>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (!forceRefresh && cachedDistricts != null) {
+                    return@withContext Result.success(cachedDistricts!!)
+                }
 
-    // Cache'i temizle
+                val jsonString = readAssetFile("ilce.json")
+                val districts = parsePhpMyAdminJsonDistrict(jsonString)
+
+                // Alfabetik sırala
+                val sortedDistricts = districts.sortedBy { it.name }
+
+                cachedDistricts = sortedDistricts
+                Result.success(sortedDistricts)
+            } catch (e: Exception) {
+                Result.failure(Exception("İlçeler yüklenemedi: ${e.message}"))
+            }
+        }
+    }
+
+    /**
+     * Belirli bir ile ait ilçeleri döndürür
+     */
+    suspend fun getDistrictsForProvince(provinceId: String): Result<List<District>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val allDistricts = loadDistricts().getOrThrow()
+                val filtered = allDistricts
+                    .filter { it.provinceId == provinceId }
+                    .sortedBy { it.name }
+                Result.success(filtered)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    /**
+     * Ülke araması yapar
+     */
+    suspend fun searchCountries(query: String): List<Country> {
+        val countries = cachedCountries ?: loadCountries().getOrNull() ?: emptyList()
+        if (query.isBlank()) return countries
+
+        return countries.filter { it.matchesSearch(query) }
+    }
+
+    /**
+     * İl araması yapar
+     */
+    suspend fun searchProvinces(query: String): List<Province> {
+        val provinces = cachedProvinces ?: loadProvinces().getOrNull() ?: emptyList()
+        if (query.isBlank()) return provinces
+
+        return provinces.filter { it.matchesSearch(query) }
+    }
+
+    /**
+     * İlçe araması yapar (belirli bir il içinde)
+     */
+    suspend fun searchDistricts(query: String, provinceId: String): List<District> {
+        val districts = cachedDistricts ?: loadDistricts().getOrNull() ?: emptyList()
+        val filtered = districts.filter { it.provinceId == provinceId }
+
+        if (query.isBlank()) return filtered.sortedBy { it.name }
+
+        return filtered.filter { it.matchesSearch(query) }.sortedBy { it.name }
+    }
+
+    // ============================================
+    // CACHE MANAGEMENT
+    // ============================================
+
     fun clearCache() {
         cachedCountries = null
-        cachedStates = null
-        cachedCities = null
+        cachedProvinces = null
+        cachedDistricts = null
+    }
+
+    fun isCacheLoaded(): Boolean {
+        return cachedCountries != null && cachedProvinces != null && cachedDistricts != null
+    }
+
+    // ============================================
+    // PRIVATE HELPERS
+    // ============================================
+
+    private fun readAssetFile(fileName: String): String {
+        return context.assets.open(fileName).bufferedReader().use { it.readText() }
+    }
+
+    /**
+     * PHPMyAdmin export formatındaki JSON'u parse eder.
+     * Format: [header, database, {type: "table", data: [...]}]
+     */
+    private inline fun <reified T> parsePhpMyAdminJson(jsonString: String): List<T> {
+        val type = object : TypeToken<List<Map<String, Any>>>() {}.type
+        val jsonArray: List<Map<String, Any>> = gson.fromJson(jsonString, type)
+
+        // "data" içeren objeyi bul
+        for (item in jsonArray) {
+            if (item.containsKey("data")) {
+                val dataJson = gson.toJson(item["data"])
+                val dataType = object : TypeToken<List<T>>() {}.type
+                return gson.fromJson(dataJson, dataType)
+            }
+        }
+
+        return emptyList()
+    }
+
+    private fun parsePhpMyAdminJsonDistrict(jsonString: String): List<District> {
+        val type = object : TypeToken<List<Map<String, Any>>>() {}.type
+        val jsonArray: List<Map<String, Any>> = gson.fromJson(jsonString, type)
+
+        for (item in jsonArray) {
+            if (item.containsKey("data")) {
+                val dataJson = gson.toJson(item["data"])
+                val dataType = object : TypeToken<List<District>>() {}.type
+                return gson.fromJson(dataJson, dataType)
+            }
+        }
+
+        return emptyList()
     }
 }

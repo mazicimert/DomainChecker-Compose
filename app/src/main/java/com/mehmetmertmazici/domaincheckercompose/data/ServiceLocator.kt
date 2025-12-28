@@ -5,7 +5,6 @@ import android.content.Context
 import com.mehmetmertmazici.domaincheckercompose.data.repository.AuthRepository
 import com.mehmetmertmazici.domaincheckercompose.data.repository.CartRepository
 import com.mehmetmertmazici.domaincheckercompose.data.repository.InfoRepository
-import com.mehmetmertmazici.domaincheckercompose.data.repository.LocationRepository
 import com.mehmetmertmazici.domaincheckercompose.data.repository.UserRepository
 
 /**
