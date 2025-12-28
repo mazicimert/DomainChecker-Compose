@@ -74,6 +74,14 @@ interface ApiService {
     @GET("tr/api/signout")
     suspend fun signOut(): SignOutResponse
 
+    @POST("tr/api/verify_mail_code")
+    @FormUrlEncoded
+    suspend fun verifyMailCode(
+        @Field("clientid") clientId: Int,
+        @Field("email") email: String,
+        @Field("code") code: String
+    ): VerifyMailCodeResponse
+
     // ============================================
     // USER - Kullanıcı İşlemleri
     // ============================================

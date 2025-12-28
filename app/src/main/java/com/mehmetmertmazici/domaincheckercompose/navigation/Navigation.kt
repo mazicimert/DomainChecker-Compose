@@ -14,6 +14,7 @@ import com.mehmetmertmazici.domaincheckercompose.ui.screens.*
 import com.mehmetmertmazici.domaincheckercompose.ui.screens.auth.ForgotPasswordScreen
 import com.mehmetmertmazici.domaincheckercompose.ui.screens.auth.LoginScreen
 import com.mehmetmertmazici.domaincheckercompose.ui.screens.auth.RegisterScreen
+import com.mehmetmertmazici.domaincheckercompose.ui.screens.auth.MailVerificationScreen
 import com.mehmetmertmazici.domaincheckercompose.viewmodel.AuthViewModel
 import com.mehmetmertmazici.domaincheckercompose.viewmodel.DomainPricesViewModel
 import com.mehmetmertmazici.domaincheckercompose.viewmodel.DomainSearchViewModel
@@ -26,6 +27,7 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Register : Screen("register")
     object ForgotPassword : Screen("forgot_password")
+    object MailVerification : Screen("mail_verification")
 
     // Main Screens
     object Home : Screen("home")
@@ -58,13 +60,6 @@ fun DomainCheckerApp(
     // Auth ViewModel
     val authViewModel = remember { AuthViewModel() }
 
-    // Session check
-    var isLoggedIn by remember { mutableStateOf<Boolean?>(null) }
-
-    LaunchedEffect(Unit) {
-        isLoggedIn = ServiceLocator.sessionManager.isLoggedIn.first()
-    }
-
     // Navigasyon değişimlerini dinle
     DisposableEffect(navController) {
         val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
@@ -76,20 +71,88 @@ fun DomainCheckerApp(
         }
     }
 
-    // Ana içerik - Auth ekranları drawer dışında
+    // Auth ekranlarında drawer gösterme
     val isAuthScreen = currentRoute in listOf(
         Screen.Login.route,
         Screen.Register.route,
-        Screen.ForgotPassword.route
+        Screen.ForgotPassword.route,
+        Screen.MailVerification.route
     )
 
-    if (isAuthScreen) {
-        // Auth ekranları drawer olmadan
+    // Drawer'ı koşullu olarak göster
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = !isAuthScreen, // Auth ekranlarında gesture kapalı
+        drawerContent = {
+            if (!isAuthScreen) {
+                DomainCheckerDrawer(
+                    selectedRoute = currentRoute,
+                    onNavigate = { route ->
+                        scope.launch {
+                            drawerState.close()
+                            when (route) {
+                                "home" -> navController.navigate(Screen.Home.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                                "prices" -> navController.navigate(Screen.DomainPrices.route)
+                                "about" -> navController.navigate(Screen.AppInfo.route)
+                                "cart" -> navController.navigate(Screen.Cart.route)
+                                "profile" -> navController.navigate(Screen.Profile.route)
+                                "login" -> navController.navigate(Screen.Login.route)
+                                "register" -> navController.navigate(Screen.Register.route)
+                                "logout" -> {
+                                    // Logout işlemini yap
+                                    scope.launch {
+                                        try {
+                                            ServiceLocator.authRepository.logout()
+                                        } catch (e: Exception) {
+                                            // ne olursa olsun devammm
+                                        }
+                                        // Login sayfasına yönlendir
+                                        navController.navigate(Screen.Login.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                inclusive = true
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    onHelp = {
+                        scope.launch { drawerState.close() }
+                        onHelpClick()
+                    },
+                    onIsimkayit = {
+                        scope.launch { drawerState.close() }
+                        onIsimkayitClick()
+                    },
+                    onRate = {
+                        scope.launch { drawerState.close() }
+                        onRateClick()
+                    },
+                    onShare = {
+                        scope.launch { drawerState.close() }
+                        onShareClick()
+                    },
+                    isDarkTheme = isDarkTheme
+                )
+            }
+        }
+    ) {
+        // TEK NavHost - Tüm ekranlar burada
         NavHost(
             navController = navController,
-            startDestination = Screen.Login.route
+            startDestination = Screen.Home.route
         ) {
-            // Auth Screens
+            // ============================================
+            // AUTH SCREENS
+            // ============================================
+
             composable(Screen.Login.route) {
                 LoginScreen(
                     viewModel = authViewModel,
@@ -121,6 +184,9 @@ fun DomainCheckerApp(
                             popUpTo(Screen.Login.route) { inclusive = true }
                         }
                     },
+                    onNavigateToVerification = {
+                        navController.navigate(Screen.MailVerification.route)
+                    },
                     onBackClick = { navController.navigateUp() },
                     isDarkTheme = isDarkTheme
                 )
@@ -139,218 +205,73 @@ fun DomainCheckerApp(
                 )
             }
 
-            // Main Screens (tekrar tanımlanacak)
-            composable(Screen.Home.route) {
-                MainContentWithDrawer(
-                    navController = navController,
-                    drawerState = drawerState,
-                    currentRoute = currentRoute,
-                    isDarkTheme = isDarkTheme,
-                    searchViewModel = searchViewModel,
-                    pricesViewModel = pricesViewModel,
-                    authViewModel = authViewModel,
-                    onHelpClick = onHelpClick,
-                    onIsimkayitClick = onIsimkayitClick,
-                    onRateClick = onRateClick,
-                    onShareClick = onShareClick,
-                    onEmailClick = onEmailClick,
-                    onContractsClick = onContractsClick,
-                    onLicenseClick = onLicenseClick,
-                    getVersionInfo = getVersionInfo
-                )
-            }
-        }
-    } else {
-        // Ana ekranlar drawer ile
-        ModalNavigationDrawer(
-            drawerState = drawerState,
-            drawerContent = {
-                DomainCheckerDrawer(
-                    selectedRoute = currentRoute,
-                    onNavigate = { route ->
-                        scope.launch {
-                            drawerState.close()
-                            when (route) {
-                                "home" -> navController.navigate(Screen.Home.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                                "prices" -> navController.navigate(Screen.DomainPrices.route)
-                                "about" -> navController.navigate(Screen.AppInfo.route)
-                                "cart" -> navController.navigate(Screen.Cart.route)
-                                "profile" -> navController.navigate(Screen.Profile.route)
-                                "login" -> navController.navigate(Screen.Login.route)
-                            }
+            composable(Screen.MailVerification.route) {
+                MailVerificationScreen(
+                    viewModel = authViewModel,
+                    onNavigateToHome = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
                         }
                     },
-                    onHelp = {
-                        scope.launch { drawerState.close() }
-                        onHelpClick()
-                    },
-                    onIsimkayit = {
-                        scope.launch { drawerState.close() }
-                        onIsimkayitClick()
-                    },
-                    onRate = {
-                        scope.launch { drawerState.close() }
-                        onRateClick()
-                    },
-                    onShare = {
-                        scope.launch { drawerState.close() }
-                        onShareClick()
+                    onBackClick = {
+                        navController.navigate(Screen.Register.route) {
+                            popUpTo(Screen.MailVerification.route) { inclusive = true }
+                        }
                     },
                     isDarkTheme = isDarkTheme
                 )
             }
-        ) {
-            NavHost(
-                navController = navController,
-                startDestination = Screen.Home.route
-            ) {
-                // Home Screen
-                composable(Screen.Home.route) {
-                    val uiState by searchViewModel.uiState.collectAsState()
 
-                    MainSearchScreen(
-                        viewModel = searchViewModel,
-                        onNavigationClick = {
-                            scope.launch { drawerState.open() }
-                        },
-                        onHelpClick = onHelpClick,
-                        isDarkTheme = isDarkTheme
-                    )
+            // ============================================
+            // MAIN SCREENS
+            // ============================================
 
-                    uiState.showWhoisDialog?.let { (domain, data) ->
-                        WhoisDialog(
-                            domain = domain,
-                            whoisData = data,
-                            onDismiss = { searchViewModel.dismissWhois() },
-                            onCopy = { searchViewModel.copyWhoisData(data) },
-                            isDarkTheme = isDarkTheme
-                        )
-                    }
-                }
+            composable(Screen.Home.route) {
+                val uiState by searchViewModel.uiState.collectAsState()
 
-                // Domain Prices Screen
-                composable(Screen.DomainPrices.route) {
-                    DomainPricesScreen(
-                        viewModel = pricesViewModel,
-                        onBackClick = { navController.navigateUp() },
-                        isDarkTheme = isDarkTheme
-                    )
-                }
+                MainSearchScreen(
+                    viewModel = searchViewModel,
+                    onNavigationClick = {
+                        scope.launch { drawerState.open() }
+                    },
+                    onHelpClick = onHelpClick,
+                    isDarkTheme = isDarkTheme
+                )
 
-                // App Info Screen
-                composable(Screen.AppInfo.route) {
-                    val (versionName, versionCode, installDate) = getVersionInfo()
-
-                    AppInfoScreen(
-                        versionName = versionName,
-                        versionCode = versionCode,
-                        installDate = installDate,
-                        onBackClick = { navController.navigateUp() },
-                        onEmailClick = onEmailClick,
-                        onIsimkayitClick = onIsimkayitClick,
-                        onContractsClick = onContractsClick,
-                        onLicenseClick = onLicenseClick,
-                        isDarkTheme = isDarkTheme
-                    )
-                }
-
-                // Auth Screens (drawer içinden erişim için)
-                composable(Screen.Login.route) {
-                    LoginScreen(
-                        viewModel = authViewModel,
-                        onNavigateToRegister = {
-                            navController.navigate(Screen.Register.route)
-                        },
-                        onNavigateToForgotPassword = {
-                            navController.navigate(Screen.ForgotPassword.route)
-                        },
-                        onNavigateToHome = {
-                            navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Login.route) { inclusive = true }
-                            }
-                        },
-                        isDarkTheme = isDarkTheme
-                    )
-                }
-
-                composable(Screen.Register.route) {
-                    RegisterScreen(
-                        viewModel = authViewModel,
-                        onNavigateToLogin = {
-                            navController.navigate(Screen.Login.route) {
-                                popUpTo(Screen.Register.route) { inclusive = true }
-                            }
-                        },
-                        onNavigateToHome = {
-                            navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Login.route) { inclusive = true }
-                            }
-                        },
-                        onBackClick = { navController.navigateUp() },
-                        isDarkTheme = isDarkTheme
-                    )
-                }
-
-                composable(Screen.ForgotPassword.route) {
-                    ForgotPasswordScreen(
-                        viewModel = authViewModel,
-                        onBackClick = { navController.navigateUp() },
-                        onNavigateToLogin = {
-                            navController.navigate(Screen.Login.route) {
-                                popUpTo(Screen.ForgotPassword.route) { inclusive = true }
-                            }
-                        },
+                uiState.showWhoisDialog?.let { (domain, data) ->
+                    WhoisDialog(
+                        domain = domain,
+                        whoisData = data,
+                        onDismiss = { searchViewModel.dismissWhois() },
+                        onCopy = { searchViewModel.copyWhoisData(data) },
                         isDarkTheme = isDarkTheme
                     )
                 }
             }
+
+            composable(Screen.DomainPrices.route) {
+                DomainPricesScreen(
+                    viewModel = pricesViewModel,
+                    onBackClick = { navController.navigateUp() },
+                    isDarkTheme = isDarkTheme
+                )
+            }
+
+            composable(Screen.AppInfo.route) {
+                val (versionName, versionCode, installDate) = getVersionInfo()
+
+                AppInfoScreen(
+                    versionName = versionName,
+                    versionCode = versionCode,
+                    installDate = installDate,
+                    onBackClick = { navController.navigateUp() },
+                    onEmailClick = onEmailClick,
+                    onIsimkayitClick = onIsimkayitClick,
+                    onContractsClick = onContractsClick,
+                    onLicenseClick = onLicenseClick,
+                    isDarkTheme = isDarkTheme
+                )
+            }
         }
-    }
-}
-
-@Composable
-private fun MainContentWithDrawer(
-    navController: NavController,
-    drawerState: DrawerState,
-    currentRoute: String?,
-    isDarkTheme: Boolean,
-    searchViewModel: DomainSearchViewModel,
-    pricesViewModel: DomainPricesViewModel,
-    authViewModel: AuthViewModel,
-    onHelpClick: () -> Unit,
-    onIsimkayitClick: () -> Unit,
-    onRateClick: () -> Unit,
-    onShareClick: () -> Unit,
-    onEmailClick: () -> Unit,
-    onContractsClick: () -> Unit,
-    onLicenseClick: () -> Unit,
-    getVersionInfo: () -> Triple<String, Long, String>
-) {
-    val scope = rememberCoroutineScope()
-    val uiState by searchViewModel.uiState.collectAsState()
-
-    MainSearchScreen(
-        viewModel = searchViewModel,
-        onNavigationClick = {
-            scope.launch { drawerState.open() }
-        },
-        onHelpClick = onHelpClick,
-        isDarkTheme = isDarkTheme
-    )
-
-    uiState.showWhoisDialog?.let { (domain, data) ->
-        WhoisDialog(
-            domain = domain,
-            whoisData = data,
-            onDismiss = { searchViewModel.dismissWhois() },
-            onCopy = { searchViewModel.copyWhoisData(data) },
-            isDarkTheme = isDarkTheme
-        )
     }
 }

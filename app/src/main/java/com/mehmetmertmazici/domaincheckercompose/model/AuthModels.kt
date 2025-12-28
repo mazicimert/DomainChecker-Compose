@@ -88,11 +88,43 @@ data class RegisterResponse(
     val user: UserInfo?,
 
     @SerializedName("token")
-    val token: String?
+    val token: String?,
+
+    @SerializedName("data")
+    val data: RegisterData?
+
 ) {
     val isSuccess: Boolean
         get() = code == 1 && status == "success"
+
+
+    val requiresMailVerification: Boolean
+        get() = isSuccess && data?.status == "mail_verification_required"
+
+
+    val clientId: Int?
+        get() = data?.clientId
+
+
+    val verificationEmail: String?
+        get() = data?.email
 }
+
+
+data class RegisterData(
+    @SerializedName("status")
+    val status: String?,
+
+    @SerializedName("message")
+    val message: String?,
+
+    @SerializedName("clientid")
+    val clientId: Int?,
+
+    @SerializedName("email")
+    val email: String?
+)
+
 
 // ============================================
 // FORGET PASSWORD
@@ -133,3 +165,97 @@ data class SignOutResponse(
     val isSuccess: Boolean
         get() = code == 1 && status == "success"
 }
+
+
+// ============================================
+// MAIL VERIFICATION - E-posta Doğrulama
+// ============================================
+
+data class VerifyMailCodeRequest(
+    val clientId: Int,
+    val email: String,
+    val code: String
+)
+
+data class VerifyMailCodeResponse(
+    @SerializedName("code")
+    val code: Int,
+
+    @SerializedName("status")
+    val status: String,
+
+    @SerializedName("message")
+    val message: VerificationUserData?,
+
+    @SerializedName("token")
+    val token: String?
+) {
+    val isSuccess: Boolean
+        get() = code == 1 && status == "success"
+
+    /**
+     * Kullanıcı ID'si
+     */
+    val userId: Int?
+        get() = message?.id
+
+    /**
+     * Kullanıcı adı
+     */
+    val userName: String?
+        get() = message?.name
+
+    /**
+     * Kullanıcı soyadı
+     */
+    val userSurname: String?
+        get() = message?.surname
+
+    /**
+     * Yönlendirme URL'i
+     */
+    val redirectUrl: String?
+        get() = message?.url
+
+    /**
+     * Doğrulama sonrası kullanıcı bilgilerini UserInfo'ya dönüştürür
+     */
+    fun toUserInfo(email: String): UserInfo {
+        return UserInfo(
+            id = message?.id,
+            name = message?.name,
+            surname = message?.surname,
+            email = email,
+            companyName = null,
+            address = null,
+            address2 = null,
+            city = null,
+            district = null,
+            zipCode = null,
+            country = null,
+            phone = null,
+            gsm = null,
+            taxNumber = null
+        )
+    }
+}
+
+/**
+ * E-posta doğrulama başarılı olduğunda dönen kullanıcı bilgileri
+ */
+data class VerificationUserData(
+    @SerializedName("id")
+    val id: Int?,
+
+    @SerializedName("name")
+    val name: String?,
+
+    @SerializedName("surname")
+    val surname: String?,
+
+    @SerializedName("credit")
+    val credit: String?,
+
+    @SerializedName("url")
+    val url: String?
+)

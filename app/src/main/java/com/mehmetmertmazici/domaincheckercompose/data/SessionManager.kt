@@ -184,4 +184,31 @@ class SessionManager(private val context: Context) {
             prefs[KEY_USER_COUNTRY] = user.country ?: ""
         }
     }
+
+
+    /**
+     * E-posta doğrulaması sonrası session oluştur
+     */
+    suspend fun createSessionAfterVerification(
+        userId: Int,
+        email: String,
+        name: String,
+        surname: String,
+        token: String?
+    ) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_IS_LOGGED_IN] = true
+            prefs[KEY_TOKEN] = token ?: ""
+            prefs[KEY_USER_ID] = userId
+            prefs[KEY_USER_EMAIL] = email
+            prefs[KEY_USER_NAME] = name
+            prefs[KEY_USER_SURNAME] = surname
+        }
+
+        // In-memory session'ı da güncelle
+        SessionHolder.token = token
+        SessionHolder.userId = userId
+        SessionHolder.userEmail = email
+        SessionHolder.userName = "$name $surname".trim()
+    }
 }

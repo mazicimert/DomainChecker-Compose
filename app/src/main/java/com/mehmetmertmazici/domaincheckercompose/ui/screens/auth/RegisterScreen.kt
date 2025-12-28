@@ -59,6 +59,7 @@ fun RegisterScreen(
     viewModel: AuthViewModel,
     onNavigateToLogin: () -> Unit,
     onNavigateToHome: () -> Unit,
+    onNavigateToVerification: () -> Unit,
     onBackClick: () -> Unit,
     isDarkTheme: Boolean = false
 ) {
@@ -79,6 +80,9 @@ fun RegisterScreen(
                 }
                 is AuthEffect.NavigateToHome -> {
                     onNavigateToHome()
+                }
+                is AuthEffect.NavigateToVerification -> {
+                    onNavigateToVerification()
                 }
                 else -> {}
             }

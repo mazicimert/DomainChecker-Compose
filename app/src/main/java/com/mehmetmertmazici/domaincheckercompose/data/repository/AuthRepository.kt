@@ -7,6 +7,7 @@ import com.mehmetmertmazici.domaincheckercompose.model.LoginResponse
 import com.mehmetmertmazici.domaincheckercompose.model.RegisterRequest
 import com.mehmetmertmazici.domaincheckercompose.model.RegisterResponse
 import com.mehmetmertmazici.domaincheckercompose.model.SignOutResponse
+import com.mehmetmertmazici.domaincheckercompose.model.VerifyMailCodeResponse
 import com.mehmetmertmazici.domaincheckercompose.network.ApiClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -29,17 +30,25 @@ class AuthRepository(
                 val response = apiService.login(email, password)
 
                 if (response.isSuccess) {
-                    // Session'ı kaydet
-                    sessionManager.saveLoginSession(response)
-                    Result.success(response)
+                    // E-posta doğrulaması gerekiyorsa session kaydetme
+                    if (response.requiresMailVerification) {
+                        // Doğrulama gerekiyor, session kaydetmiyoruz
+                        Result.success(response)
+                    } else {
+                        // Doğrulama gerekmiyorsa session kaydet
+                        sessionManager.saveLoginSession(response)
+                        Result.success(response)
+                    }
                 } else {
-                    Result.failure(Exception(response.message ?: "Giriş başarısız"))
+                    Result.failure(Exception(response.message?.toString() ?: "Giriş başarısız"))
                 }
             } catch (e: Exception) {
                 Result.failure(e)
             }
         }
     }
+
+
 
     // ============================================
     // REGISTER
@@ -70,11 +79,57 @@ class AuthRepository(
                 )
 
                 if (response.isSuccess) {
-                    // Session'ı kaydet
-                    sessionManager.saveRegisterSession(response)
-                    Result.success(response)
+                    // Doğrulama tamamlandıktan sonra session kaydedilecek
+                    if (response.requiresMailVerification) {
+                        // Doğrulama gerekiyor, session kaydetmiyoruz
+                        Result.success(response)
+                    } else {
+                        // Doğrulama gerekmiyorsa (eski davranış)
+                        sessionManager.saveRegisterSession(response)
+                        Result.success(response)
+                    }
                 } else {
                     Result.failure(Exception(response.message ?: "Kayıt başarısız"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    // MAIL VERIFICATION - E-posta Doğrulama
+    suspend fun verifyMailCode(
+        clientId: Int,
+        email: String,
+        code: String
+    ): Result<VerifyMailCodeResponse> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.verifyMailCode(
+                    clientId = clientId,
+                    email = email,
+                    code = code
+                )
+
+                if (response.isSuccess) {
+                    // Doğrulama başarılı, session oluştur
+                    val userInfo = response.toUserInfo(email)
+                    sessionManager.updateUserInfo(userInfo)
+
+                    // Token varsa SessionHolder'a kaydet
+                    response.token?.let { token ->
+                        com.mehmetmertmazici.domaincheckercompose.network.SessionHolder.token = token
+                    }
+
+                    // Kullanıcı bilgilerini SessionHolder'a kaydet - GÜNCELLENDİ
+                    com.mehmetmertmazici.domaincheckercompose.network.SessionHolder.userId = response.userId
+                    com.mehmetmertmazici.domaincheckercompose.network.SessionHolder.userEmail = email
+                    com.mehmetmertmazici.domaincheckercompose.network.SessionHolder.userName = "${response.userName ?: ""} ${response.userSurname ?: ""}".trim()
+
+
+                    Result.success(response)
+                } else {
+                    Result.failure(Exception("Doğrulama başarısız"))
                 }
             } catch (e: Exception) {
                 Result.failure(e)

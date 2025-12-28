@@ -26,6 +26,8 @@ sealed interface AuthEffect {
     data class ShowSuccess(val message: String) : AuthEffect
     data object NavigateToHome : AuthEffect
     data object NavigateToLogin : AuthEffect
+    data object NavigateToVerification : AuthEffect
+
 }
 
 // ============================================
@@ -50,6 +52,20 @@ data class ForgotPasswordUiState(
     val isLoading: Boolean = false,
     val emailError: String? = null,
     val isEmailSent: Boolean = false
+)
+
+// ============================================
+// MAIL VERIFICATION UI STATE
+// ============================================
+
+data class MailVerificationUiState(
+    val clientId: Int = 0,
+    val email: String = "",
+    val verificationCode: String = "",
+    val isLoading: Boolean = false,
+    val codeError: String? = null,
+    val remainingTime: Int = 120, // 2 dakika countdown
+    val canResend: Boolean = false
 )
 
 // ============================================
@@ -277,6 +293,9 @@ class AuthViewModel : ViewModel() {
 
     private val _forgotPasswordState = MutableStateFlow(ForgotPasswordUiState())
     val forgotPasswordState: StateFlow<ForgotPasswordUiState> = _forgotPasswordState.asStateFlow()
+
+    private val _mailVerificationState = MutableStateFlow(MailVerificationUiState())
+    val mailVerificationState: StateFlow<MailVerificationUiState> = _mailVerificationState.asStateFlow()
 
     // === Effects ===
     private val _effect = Channel<AuthEffect>()
@@ -840,10 +859,27 @@ class AuthViewModel : ViewModel() {
             val result = authRepository.register(request)
 
             result.fold(
-                onSuccess = {
+                onSuccess = { response ->
                     _registerState.update { it.copy(isLoading = false) }
-                    sendEffect(AuthEffect.ShowSuccess("Kayıt başarılı"))
-                    sendEffect(AuthEffect.NavigateToHome)
+
+                    // E-posta doğrulaması gerekiyor mu kontrol et
+                    if (response.requiresMailVerification) {
+                        // Doğrulama state'ini hazırla
+                        _mailVerificationState.update {
+                            MailVerificationUiState(
+                                clientId = response.clientId ?: 0,
+                                email = response.verificationEmail ?: state.email,
+                                remainingTime = 120,
+                                canResend = false
+                            )
+                        }
+                        sendEffect(AuthEffect.ShowSuccess(response.data?.message ?: "Kayıt başarılı! Doğrulama kodu gönderildi."))
+                        sendEffect(AuthEffect.NavigateToVerification)
+                    } else {
+                        // Doğrulama gerekmiyorsa direkt ana sayfaya git
+                        sendEffect(AuthEffect.ShowSuccess("Kayıt başarılı"))
+                        sendEffect(AuthEffect.NavigateToHome)
+                    }
                 },
                 onFailure = { error ->
                     _registerState.update { it.copy(isLoading = false) }
@@ -856,6 +892,146 @@ class AuthViewModel : ViewModel() {
     fun clearRegisterState() {
         _registerState.value = RegisterUiState()
         loadLocationData()
+    }
+
+    // ============================================
+    // MAIL VERIFICATION İŞLEMLERİ
+    // ============================================
+
+    fun updateVerificationCode(code: String) {
+        // Sadece rakam ve maksimum 6 karakter
+        val filteredCode = code.filter { it.isDigit() }.take(6)
+        _mailVerificationState.update {
+            it.copy(verificationCode = filteredCode, codeError = null)
+        }
+    }
+
+    fun verifyMailCode() {
+        val state = _mailVerificationState.value
+
+        // Validasyon
+        if (state.verificationCode.isBlank()) {
+            _mailVerificationState.update { it.copy(codeError = "Doğrulama kodu gerekli") }
+            return
+        }
+
+        if (state.verificationCode.length < 6) {
+            _mailVerificationState.update { it.copy(codeError = "Doğrulama kodu 6 haneli olmalı") }
+            return
+        }
+
+        viewModelScope.launch {
+            _mailVerificationState.update { it.copy(isLoading = true, codeError = null) }
+
+            val result = authRepository.verifyMailCode(
+                clientId = state.clientId,
+                email = state.email,
+                code = state.verificationCode
+            )
+
+            result.fold(
+                onSuccess = { response ->
+                    _mailVerificationState.update { it.copy(isLoading = false) }
+
+                    // Session'ı oluştur
+                    ServiceLocator.sessionManager.createSessionAfterVerification(
+                        userId = response.userId ?: 0,
+                        email = state.email,
+                        name = response.userName ?: "",
+                        surname = response.userSurname ?: "",
+                        token = response.token
+                    )
+
+                    sendEffect(AuthEffect.ShowSuccess("Doğrulama başarılı! Hoş geldiniz."))
+                    sendEffect(AuthEffect.NavigateToHome)
+                },
+                onFailure = { error ->
+                    _mailVerificationState.update {
+                        it.copy(
+                            isLoading = false,
+                            codeError = error.message ?: "Doğrulama başarısız"
+                        )
+                    }
+                    sendEffect(AuthEffect.ShowError(error.message ?: "Doğrulama başarısız"))
+                }
+            )
+        }
+    }
+
+    fun resendVerificationCode() {
+        val state = _mailVerificationState.value
+        val registerState = _registerState.value
+
+        if (!state.canResend) return
+
+        // Kayıt işlemini tekrar yap (yeni kod gönderilecek)
+        viewModelScope.launch {
+            _mailVerificationState.update { it.copy(isLoading = true) }
+
+            val membershipTypeId = if (registerState.isCorporate) 2 else 1
+            val acceptedContractIds = registerState.contracts
+                .filter { it.isAccepted }
+                .map { it.contract.id }
+
+            val request = RegisterRequest(
+                name = registerState.name,
+                surname = registerState.surname,
+                citizen = if (registerState.isTurkey) registerState.citizen else "",
+                email = registerState.email,
+                password = registerState.password,
+                phone = registerState.phone,
+                gsm = registerState.phone,
+                address = registerState.address,
+                address2 = registerState.address2,
+                city = registerState.cityValue,
+                district = registerState.districtValue,
+                zipcode = registerState.zipCode,
+                country = registerState.selectedCountryIso2,
+                companyname = registerState.companyName,
+                vergino = registerState.taxNumber,
+                membershipType = membershipTypeId,
+                contracts = acceptedContractIds
+            )
+
+            val result = authRepository.register(request)
+
+            result.fold(
+                onSuccess = { response ->
+                    _mailVerificationState.update {
+                        it.copy(
+                            isLoading = false,
+                            clientId = response.clientId ?: state.clientId,
+                            remainingTime = 120,
+                            canResend = false,
+                            verificationCode = ""
+                        )
+                    }
+                    sendEffect(AuthEffect.ShowSuccess("Yeni doğrulama kodu gönderildi"))
+                },
+                onFailure = { error ->
+                    _mailVerificationState.update { it.copy(isLoading = false) }
+                    sendEffect(AuthEffect.ShowError(error.message ?: "Kod gönderilemedi"))
+                }
+            )
+        }
+    }
+
+    fun startVerificationCountdown() {
+        viewModelScope.launch {
+            for (i in 120 downTo 0) {
+                _mailVerificationState.update {
+                    it.copy(
+                        remainingTime = i,
+                        canResend = i == 0
+                    )
+                }
+                kotlinx.coroutines.delay(1000)
+            }
+        }
+    }
+
+    fun clearMailVerificationState() {
+        _mailVerificationState.value = MailVerificationUiState()
     }
 
     // ============================================
