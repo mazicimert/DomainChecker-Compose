@@ -29,6 +29,11 @@ data class LoginResponse(
 ) {
     val isSuccess: Boolean
         get() = code == 1 && status == "success"
+
+    val requiresMailVerification: Boolean
+        get() = isSuccess && message == "mail"
+
+
 }
 
 // ============================================

@@ -82,14 +82,12 @@ fun DomainCheckerDrawer(
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_isimkayit_logo),
-                        contentDescription = "İsimKayıt Logo",
+                    Icon(
+                        imageVector = Icons.Default.Domain,
+                        contentDescription = "Domain Icon",
+                        tint = Color.White,
                         modifier = Modifier
-                            .width(140.dp)
-                            .height(40.dp),
-                        contentScale = ContentScale.Fit,
-                        colorFilter = ColorFilter.tint(Color.White)
+                            .size(40.dp)
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -117,7 +115,7 @@ fun DomainCheckerDrawer(
                         )
 
                         Text(
-                            text = "İsimKayıt ile domain arayın",
+                            text = "Bizimle domain arayın",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.White.copy(alpha = 0.8f)
                         )
@@ -325,19 +323,7 @@ fun DomainCheckerDrawer(
                 modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp)
             )
 
-            NavigationDrawerItem(
-                label = { Text("İsimKayıt.com") },
-                icon = {
-                    Icon(
-                        imageVector = Icons.Filled.Language,
-                        contentDescription = null
-                    )
-                },
-                selected = false,
-                onClick = onIsimkayit,
-                colors = itemColors,
-                modifier = Modifier.padding(horizontal = 12.dp)
-            )
+
 
             NavigationDrawerItem(
                 label = { Text("Uygulamayı Değerlendir") },

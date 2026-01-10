@@ -90,14 +90,12 @@ fun LoginScreen(
         ) {
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Logo
-            Image(
-                painter = painterResource(id = R.drawable.ic_isimkayit_logo),
-                contentDescription = "Logo",
+            Icon(
+                imageVector = Icons.Default.Domain,
+                contentDescription = "Domain Icon",
+                tint = Color.White,
                 modifier = Modifier
-                    .width(180.dp)
-                    .height(60.dp),
-                contentScale = ContentScale.Fit
+                    .size(40.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))

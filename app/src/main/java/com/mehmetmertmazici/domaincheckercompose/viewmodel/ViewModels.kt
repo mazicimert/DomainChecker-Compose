@@ -156,7 +156,7 @@ class DomainSearchViewModel : ViewModel() {
     }
 
     fun openRegistration(domain: String) {
-        val url = "https://www.isimkayit.com/alan-adi-kaydi?query=$domain"
+        val url = "https://www.google.com"
         sendEffect(SearchEffect.OpenUrl(url))
     }
 
