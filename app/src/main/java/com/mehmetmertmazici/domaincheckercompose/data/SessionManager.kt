@@ -146,8 +146,8 @@ class SessionManager(private val context: Context) {
                 zipCode = null,
                 country = prefs[KEY_USER_COUNTRY],
                 phone = prefs[KEY_USER_PHONE],
-                gsm = null,
-                taxNumber = null
+                taxNumber = null,
+                taxOffice = null
             )
         }
     }

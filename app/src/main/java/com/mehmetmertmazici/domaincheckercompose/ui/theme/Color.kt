@@ -110,9 +110,9 @@ val LightColors = AppColors(
     Info = Color(0xFF3B82F6),
 
     // Gradient
-    GradientStart = Color(0xFFA2B8D2),
-    GradientCenter = Color(0xFF7596BA),
-    GradientEnd = Color(0xFF5A7CA0),
+    GradientStart = Color(0x97A2B8D2),
+    GradientCenter = Color(0xD77596BA),
+    GradientEnd = Color(0xC35A7CA0),
 
     CardBackground = Color(0xFFFFFFFF),
     SemiTransparentBlack = Color(0x80000000),

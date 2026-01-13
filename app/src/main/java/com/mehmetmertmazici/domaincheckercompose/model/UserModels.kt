@@ -43,11 +43,11 @@ data class UserInfo(
     @SerializedName("phone")
     val phone: String?,
 
-    @SerializedName("gsm")
-    val gsm: String?,
-
     @SerializedName("vergino")
-    val taxNumber: String?
+    val taxNumber: String?,
+
+    @SerializedName("vergidairesi")
+    val taxOffice: String?
 ) {
     val fullName: String
         get() = "${name.orEmpty()} ${surname.orEmpty()}".trim()

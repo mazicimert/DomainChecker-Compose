@@ -27,7 +27,6 @@ sealed interface AuthEffect {
     data object NavigateToHome : AuthEffect
     data object NavigateToLogin : AuthEffect
     data object NavigateToVerification : AuthEffect
-
 }
 
 // ============================================
@@ -78,43 +77,6 @@ data class ContractAcceptance(
 )
 
 // ============================================
-// FATURA TESLİMATI SEÇENEKLERİ
-// ============================================
-
-enum class InvoiceDeliveryType(val value: String, val displayName: String) {
-    NONE("", "Yok"),
-    E_FATURA("e-fatura", "E-FATURA - E-ARŞİV Fatura");
-
-    companion object {
-        fun fromValue(value: String): InvoiceDeliveryType {
-            return entries.find { it.value == value } ?: NONE
-        }
-    }
-}
-
-// ============================================
-// REGISTER STEPS
-// ============================================
-
-/**
- * Kayıt Aşamaları:
- * - Bireysel: 1 -> 2 -> 4 (3 atlanır)
- * - Kurumsal: 1 -> 2 -> 3 -> 4
- */
-enum class RegisterStep(val stepNumber: Int, val title: String) {
-    PERSONAL_INFO(1, "Kişisel Bilgiler"),
-    BILLING_ADDRESS(2, "Fatura Adresi"),
-    ADDITIONAL_INFO(3, "Ek Gerekli Bilgiler"), // Sadece Kurumsal
-    ACCOUNT_SECURITY(4, "Hesap Güvenliği");
-
-    companion object {
-        fun fromNumber(number: Int): RegisterStep {
-            return entries.find { it.stepNumber == number } ?: PERSONAL_INFO
-        }
-    }
-}
-
-// ============================================
 // REGISTER UI STATE
 // ============================================
 
@@ -122,17 +84,17 @@ data class RegisterUiState(
     // === Hesap Türü ===
     val accountType: AccountType = AccountType.INDIVIDUAL,
 
-    // === Aşama 1: Kişisel Bilgiler ===
+    // === Kişisel Bilgiler ===
     val name: String = "",
     val surname: String = "",
     val email: String = "",
     val phone: String = "",
-    val citizen: String = "", // T.C. Kimlik Numarası
+    val citizen: String = "", // T.C. Kimlik Numarası (Opsiyonel)
 
-    // === Aşama 2: Fatura Adresi ===
+    // === Adres Bilgileri ===
     val companyName: String = "", // Firma Adı (Opsiyonel)
     val address: String = "",
-    val address2: String = "", // Adres Devamı
+    val address2: String = "", // Adres Devamı (Opsiyonel)
     val zipCode: String = "",
 
     // Ülke (ISO2 kodu saklanır)
@@ -149,13 +111,11 @@ data class RegisterUiState(
     val selectedDistrictName: String = "",
     val manualDistrict: String = "", // TR dışı için
 
-    // === Aşama 3: Ek Bilgiler (Sadece Kurumsal) ===
+    // === Kurumsal Bilgiler (Sadece Kurumsal) ===
     val taxNumber: String = "", // Vergi Numarası
     val taxOffice: String = "", // Vergi Dairesi
-    val invoiceTitle: String = "", // Fatura Ünvanı
-    val invoiceDeliveryType: InvoiceDeliveryType = InvoiceDeliveryType.NONE,
 
-    // === Aşama 4: Hesap Güvenliği ===
+    // === Hesap Güvenliği ===
     val password: String = "",
     val passwordConfirm: String = "",
     val securityQuestion: String = "",
@@ -185,7 +145,6 @@ data class RegisterUiState(
     val districtSearchQuery: String = "",
 
     // === UI State ===
-    val currentStep: Int = 1,
     val isLoading: Boolean = false,
     val isPasswordVisible: Boolean = false,
     val errors: Map<String, String> = emptyMap()
@@ -197,29 +156,6 @@ data class RegisterUiState(
 
     val isTurkey: Boolean
         get() = selectedCountryIso2 == "TR"
-
-    /**
-     * Toplam adım sayısı:
-     * - Bireysel: 3 (1, 2, 4)
-     * - Kurumsal: 4 (1, 2, 3, 4)
-     */
-    val totalSteps: Int
-        get() = if (isCorporate) 4 else 3
-
-    /**
-     * Görüntülenecek adım numarası (progress bar için)
-     */
-    val displayStepNumber: Int
-        get() = when {
-            !isCorporate && currentStep == 4 -> 3 // Bireysel için 4. adım, 3 olarak gösterilir
-            else -> currentStep
-        }
-
-    /**
-     * Mevcut adımın başlığı
-     */
-    val currentStepTitle: String
-        get() = RegisterStep.fromNumber(currentStep).title
 
     /**
      * API'ye gönderilecek şehir değeri
@@ -238,13 +174,6 @@ data class RegisterUiState(
      */
     val allContractsAccepted: Boolean
         get() = contracts.isNotEmpty() && contracts.all { it.isAccepted }
-
-    /**
-     * Belirli bir sözleşme kabul edildi mi?
-     */
-    fun isContractAccepted(contractId: Int): Boolean {
-        return contracts.find { it.contract.id == contractId }?.isAccepted == true
-    }
 
     /**
      * Filtrelenmiş ülke listesi (arama için)
@@ -307,6 +236,8 @@ class AuthViewModel : ViewModel() {
 
     init {
         loadLocationData()
+        // Sözleşmeleri en başta yüklemeye çalışalım
+        loadContracts()
     }
 
     private fun loadLocationData() {
@@ -339,10 +270,6 @@ class AuthViewModel : ViewModel() {
                 }
             )
         }
-    }
-
-    fun retryLoadLocationData() {
-        loadLocationData()
     }
 
     // ============================================
@@ -424,12 +351,9 @@ class AuthViewModel : ViewModel() {
                     accountType = accountType,
                     taxNumber = "",
                     taxOffice = "",
-                    invoiceTitle = "",
-                    invoiceDeliveryType = InvoiceDeliveryType.NONE,
                     errors = state.errors.toMutableMap().apply {
                         remove("taxNumber")
                         remove("taxOffice")
-                        remove("invoiceTitle")
                     }
                 )
             } else {
@@ -446,14 +370,12 @@ class AuthViewModel : ViewModel() {
         _registerState.update { state ->
             val newErrors = state.errors.toMutableMap().apply { remove(field) }
             when (field) {
-                // Aşama 1
                 "name" -> state.copy(name = value, errors = newErrors)
                 "surname" -> state.copy(surname = value, errors = newErrors)
                 "email" -> state.copy(email = value, errors = newErrors)
                 "phone" -> state.copy(phone = value, errors = newErrors)
                 "citizen" -> state.copy(citizen = value.filter { it.isDigit() }.take(11), errors = newErrors)
 
-                // Aşama 2
                 "companyName" -> state.copy(companyName = value, errors = newErrors)
                 "address" -> state.copy(address = value, errors = newErrors)
                 "address2" -> state.copy(address2 = value, errors = newErrors)
@@ -461,12 +383,9 @@ class AuthViewModel : ViewModel() {
                 "manualCity" -> state.copy(manualCity = value, errors = newErrors)
                 "manualDistrict" -> state.copy(manualDistrict = value, errors = newErrors)
 
-                // Aşama 3 (Kurumsal)
                 "taxNumber" -> state.copy(taxNumber = value, errors = newErrors)
                 "taxOffice" -> state.copy(taxOffice = value, errors = newErrors)
-                "invoiceTitle" -> state.copy(invoiceTitle = value, errors = newErrors)
 
-                // Aşama 4
                 "password" -> state.copy(password = value, errors = newErrors)
                 "passwordConfirm" -> state.copy(passwordConfirm = value, errors = newErrors)
                 "securityQuestion" -> state.copy(securityQuestion = value, errors = newErrors)
@@ -475,10 +394,6 @@ class AuthViewModel : ViewModel() {
                 else -> state
             }
         }
-    }
-
-    fun updateInvoiceDeliveryType(type: InvoiceDeliveryType) {
-        _registerState.update { it.copy(invoiceDeliveryType = type) }
     }
 
     fun toggleRegisterPasswordVisibility() {
@@ -507,7 +422,6 @@ class AuthViewModel : ViewModel() {
     fun selectCountry(country: Country) {
         _registerState.update { state ->
             val isTurkeyNow = country.iso2 == "TR"
-            val wasTurkey = state.selectedCountryIso2 == "TR"
 
             // Ülke değiştiğinde ilgili alanları sıfırla
             state.copy(
@@ -529,8 +443,7 @@ class AuthViewModel : ViewModel() {
                     remove("district")
                     remove("manualCity")
                     remove("manualDistrict")
-                    // TR değilse TCKN hatasını temizle
-                    if (!isTurkeyNow) remove("citizen")
+                    if (!isTurkeyNow) remove("citizen") // TR değilse TCKN hatasını sil
                 }
             )
         }
@@ -557,15 +470,12 @@ class AuthViewModel : ViewModel() {
 
     fun selectProvince(province: Province) {
         _registerState.update { state ->
-            // İl değiştiğinde ilçeyi sıfırla ve ilçeleri filtrele
             val newFilteredDistricts = state.districts.filter { it.provinceId == province.id }
-
             state.copy(
                 selectedProvinceId = province.id,
                 selectedProvinceName = province.name,
                 showProvinceDropdown = false,
                 provinceSearchQuery = "",
-                // İlçe sıfırla
                 selectedDistrictId = "",
                 selectedDistrictName = "",
                 filteredDistricts = newFilteredDistricts,
@@ -609,142 +519,79 @@ class AuthViewModel : ViewModel() {
     }
 
     // ============================================
-    // REGISTER - ADIM NAVİGASYONU
+    // REGISTER - VALİDASYON VE KAYIT
     // ============================================
 
-    /**
-     * Sonraki adıma geç
-     */
-    fun nextRegisterStep() {
-        val state = _registerState.value
-        val errors = validateCurrentStep(state)
-
-        if (errors.isNotEmpty()) {
-            _registerState.update { it.copy(errors = errors) }
-            return
-        }
-
-        // Son adımda (4) kayıt işlemini başlat
-        if (state.currentStep == 4) {
+    fun onRegisterClick() {
+        if (validateRegisterForm()) {
             register()
-            return
+        } else {
+            sendEffect(AuthEffect.ShowError("Lütfen zorunlu alanları doldurun ve hataları düzeltin."))
         }
-
-        // Sözleşmeleri yükle (3. veya 4. adıma geçmeden)
-        if ((state.isCorporate && state.currentStep == 2) ||
-            (!state.isCorporate && state.currentStep == 2)) {
-            loadContracts()
-        }
-
-        // Sonraki adıma geç
-        val nextStep = when {
-            // Bireysel: 2'den 4'e atla
-            !state.isCorporate && state.currentStep == 2 -> 4
-            else -> state.currentStep + 1
-        }
-
-        _registerState.update { it.copy(currentStep = nextStep) }
     }
 
-    /**
-     * Önceki adıma dön
-     */
-    fun previousRegisterStep() {
+    private fun validateRegisterForm(): Boolean {
         val state = _registerState.value
-
-        val prevStep = when {
-            // Bireysel: 4'ten 2'ye dön
-            !state.isCorporate && state.currentStep == 4 -> 2
-            else -> (state.currentStep - 1).coerceAtLeast(1)
-        }
-
-        _registerState.update { it.copy(currentStep = prevStep) }
-    }
-
-    /**
-     * Mevcut adımın validasyonu
-     */
-    private fun validateCurrentStep(state: RegisterUiState): Map<String, String> {
         val errors = mutableMapOf<String, String>()
 
-        when (state.currentStep) {
-            1 -> {
-                // Aşama 1: Kişisel Bilgiler
-                if (state.name.isBlank()) errors["name"] = "Ad gerekli"
-                if (state.surname.isBlank()) errors["surname"] = "Soyad gerekli"
-                if (state.email.isBlank()) {
-                    errors["email"] = "E-posta gerekli"
-                } else if (!isValidEmail(state.email)) {
-                    errors["email"] = "Geçerli bir e-posta adresi girin"
-                }
-                if (state.phone.isBlank()) errors["phone"] = "Telefon gerekli"
-                // NOT: TCKN validasyonu son adımda yapılacak
-            }
+        // 1. Kişisel Bilgiler & İletişim
+        if (state.name.isBlank()) errors["name"] = "Ad gerekli"
+        if (state.surname.isBlank()) errors["surname"] = "Soyad gerekli"
+        if (state.email.isBlank()) {
+            errors["email"] = "E-posta gerekli"
+        } else if (!isValidEmail(state.email)) {
+            errors["email"] = "Geçerli bir e-posta adresi girin"
+        }
+        if (state.phone.isBlank()) errors["phone"] = "Telefon gerekli"
 
-            2 -> {
-                // Aşama 2: Fatura Adresi
-                if (state.address.isBlank()) errors["address"] = "Adres gerekli"
-                if (state.zipCode.isBlank()) errors["zipCode"] = "Posta kodu gerekli"
-
-                if (state.isTurkey) {
-                    // Türkiye seçili - dropdown validasyonu
-                    if (state.selectedProvinceId.isBlank()) errors["city"] = "İl seçimi gerekli"
-                    if (state.selectedDistrictId.isBlank()) errors["district"] = "İlçe seçimi gerekli"
-                } else {
-                    // Yurt dışı - manuel giriş validasyonu
-                    if (state.manualCity.isBlank()) errors["manualCity"] = "Şehir gerekli"
-                    if (state.manualDistrict.isBlank()) errors["manualDistrict"] = "İlçe/Bölge gerekli"
-                }
-            }
-
-            3 -> {
-                // Aşama 3: Ek Bilgiler (Sadece Kurumsal)
-                if (state.isCorporate) {
-                    if (state.taxNumber.isBlank()) {
-                        errors["taxNumber"] = "Vergi numarası gerekli"
-                    } else if (state.taxNumber.length < 10) {
-                        errors["taxNumber"] = "Geçerli bir vergi numarası girin"
-                    }
-                    if (state.taxOffice.isBlank()) errors["taxOffice"] = "Vergi dairesi gerekli"
-                    if (state.invoiceTitle.isBlank()) errors["invoiceTitle"] = "Fatura ünvanı gerekli"
-                }
-            }
-
-            4 -> {
-                // Aşama 4: Hesap Güvenliği + Son Validasyon
-                if (state.password.isBlank()) {
-                    errors["password"] = "Şifre gerekli"
-                } else if (state.password.length < 6) {
-                    errors["password"] = "Şifre en az 6 karakter olmalı"
-                }
-
-                if (state.passwordConfirm.isBlank()) {
-                    errors["passwordConfirm"] = "Şifre tekrarı gerekli"
-                } else if (state.password != state.passwordConfirm) {
-                    errors["passwordConfirm"] = "Şifreler eşleşmiyor"
-                }
-
-                // Sözleşme kontrolü
-                if (!state.allContractsAccepted) {
-                    errors["contracts"] = "Tüm sözleşmeleri kabul etmelisiniz"
-                }
-
-                // KRİTİK: TCKN Validasyonu (Son Aşama)
-                if (state.isTurkey) {
-                    // Türkiye seçili ise TCKN zorunlu
-                    if (state.citizen.isBlank()) {
-                        errors["citizen"] = "T.C. Kimlik Numarası gerekli"
-                    } else if (state.citizen.length != 11) {
-                        errors["citizen"] = "T.C. Kimlik Numarası 11 haneli olmalı"
-                    } else if (!isValidTCKN(state.citizen)) {
-                        errors["citizen"] = "Geçersiz T.C. Kimlik Numarası"
-                    }
-                }
-                // Yurt dışı seçili ise TCKN opsiyonel - validasyon yok
-            }
+        // 2. Güvenlik (Şifre)
+        if (state.password.isBlank()) {
+            errors["password"] = "Şifre gerekli"
+        } else if (state.password.length < 6) {
+            errors["password"] = "Şifre en az 6 karakter olmalı"
+        }
+        if (state.passwordConfirm.isBlank()) {
+            errors["passwordConfirm"] = "Şifre tekrarı gerekli"
+        } else if (state.password != state.passwordConfirm) {
+            errors["passwordConfirm"] = "Şifreler eşleşmiyor"
         }
 
-        return errors
+        // 3. Adres Bilgileri
+        if (state.address.isBlank()) errors["address"] = "Adres gerekli"
+        if (state.zipCode.isBlank()) errors["zipCode"] = "Posta kodu gerekli"
+
+        // Lokasyon Validasyonu
+        if (state.isTurkey) {
+            if (state.selectedProvinceId.isBlank()) errors["city"] = "İl seçimi gerekli"
+            if (state.selectedDistrictId.isBlank()) errors["district"] = "İlçe seçimi gerekli"
+        } else {
+            if (state.manualCity.isBlank()) errors["manualCity"] = "Şehir gerekli"
+            if (state.manualDistrict.isBlank()) errors["manualDistrict"] = "İlçe/Bölge gerekli"
+        }
+
+        // 4. T.C. Kimlik (Sadece TR ve Doluysa Kontrol Et - Opsiyonel)
+        if (state.isTurkey && state.citizen.isNotBlank()) {
+            if (state.citizen.length != 11) {
+                errors["citizen"] = "T.C. Kimlik Numarası 11 haneli olmalı"
+            } else if (!isValidTCKN(state.citizen)) {
+                errors["citizen"] = "Geçersiz T.C. Kimlik Numarası"
+            }
+        }
+        // Yurt dışı seçiliyse citizen alanı zaten UI'da gizli ve boş gider, validasyona takılmaz.
+
+        // 5. Kurumsal Kontrolleri
+        if (state.isCorporate) {
+            if (state.taxNumber.isBlank()) errors["taxNumber"] = "Vergi numarası gerekli"
+            if (state.taxOffice.isBlank()) errors["taxOffice"] = "Vergi dairesi gerekli"
+        }
+
+        // 6. Sözleşmeler
+        if (!state.allContractsAccepted) {
+            errors["contracts"] = "Kayıt olmak için sözleşmeleri kabul etmelisiniz"
+        }
+
+        _registerState.update { it.copy(errors = errors) }
+        return errors.isEmpty()
     }
 
     // ============================================
@@ -822,7 +669,7 @@ class AuthViewModel : ViewModel() {
     }
 
     // ============================================
-    // REGISTER - KAYIT İŞLEMİ
+    // REGISTER - API ÇAĞRISI
     // ============================================
 
     private fun register() {
@@ -843,7 +690,6 @@ class AuthViewModel : ViewModel() {
                 email = state.email,
                 password = state.password,
                 phone = state.phone,
-                gsm = state.phone,
                 address = state.address,
                 address2 = state.address2,
                 city = state.cityValue,
@@ -852,6 +698,7 @@ class AuthViewModel : ViewModel() {
                 country = state.selectedCountryIso2,
                 companyname = state.companyName,
                 vergino = state.taxNumber,
+                vergidairesi = state.taxOffice,
                 membershipType = membershipTypeId,
                 contracts = acceptedContractIds
             )
@@ -862,9 +709,7 @@ class AuthViewModel : ViewModel() {
                 onSuccess = { response ->
                     _registerState.update { it.copy(isLoading = false) }
 
-                    // E-posta doğrulaması gerekiyor mu kontrol et
                     if (response.requiresMailVerification) {
-                        // Doğrulama state'ini hazırla
                         _mailVerificationState.update {
                             MailVerificationUiState(
                                 clientId = response.clientId ?: 0,
@@ -876,7 +721,6 @@ class AuthViewModel : ViewModel() {
                         sendEffect(AuthEffect.ShowSuccess(response.data?.message ?: "Kayıt başarılı! Doğrulama kodu gönderildi."))
                         sendEffect(AuthEffect.NavigateToVerification)
                     } else {
-                        // Doğrulama gerekmiyorsa direkt ana sayfaya git
                         sendEffect(AuthEffect.ShowSuccess("Kayıt başarılı"))
                         sendEffect(AuthEffect.NavigateToHome)
                     }
@@ -892,6 +736,7 @@ class AuthViewModel : ViewModel() {
     fun clearRegisterState() {
         _registerState.value = RegisterUiState()
         loadLocationData()
+        loadContracts()
     }
 
     // ============================================
@@ -899,7 +744,6 @@ class AuthViewModel : ViewModel() {
     // ============================================
 
     fun updateVerificationCode(code: String) {
-        // Sadece rakam ve maksimum 6 karakter
         val filteredCode = code.filter { it.isDigit() }.take(6)
         _mailVerificationState.update {
             it.copy(verificationCode = filteredCode, codeError = null)
@@ -909,7 +753,6 @@ class AuthViewModel : ViewModel() {
     fun verifyMailCode() {
         val state = _mailVerificationState.value
 
-        // Validasyon
         if (state.verificationCode.isBlank()) {
             _mailVerificationState.update { it.copy(codeError = "Doğrulama kodu gerekli") }
             return
@@ -933,7 +776,6 @@ class AuthViewModel : ViewModel() {
                 onSuccess = { response ->
                     _mailVerificationState.update { it.copy(isLoading = false) }
 
-                    // Session'ı oluştur
                     ServiceLocator.sessionManager.createSessionAfterVerification(
                         userId = response.userId ?: 0,
                         email = state.email,
@@ -964,7 +806,6 @@ class AuthViewModel : ViewModel() {
 
         if (!state.canResend) return
 
-        // Kayıt işlemini tekrar yap (yeni kod gönderilecek)
         viewModelScope.launch {
             _mailVerificationState.update { it.copy(isLoading = true) }
 
@@ -980,7 +821,6 @@ class AuthViewModel : ViewModel() {
                 email = registerState.email,
                 password = registerState.password,
                 phone = registerState.phone,
-                gsm = registerState.phone,
                 address = registerState.address,
                 address2 = registerState.address2,
                 city = registerState.cityValue,
@@ -989,6 +829,7 @@ class AuthViewModel : ViewModel() {
                 country = registerState.selectedCountryIso2,
                 companyname = registerState.companyName,
                 vergino = registerState.taxNumber,
+                vergidairesi = registerState.taxOffice,
                 membershipType = membershipTypeId,
                 contracts = acceptedContractIds
             )
@@ -1085,9 +926,6 @@ class AuthViewModel : ViewModel() {
         return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
     }
 
-    /**
-     * T.C. Kimlik Numarası doğrulama algoritması
-     */
     private fun isValidTCKN(tckn: String): Boolean {
         if (tckn.length != 11) return false
         if (tckn[0] == '0') return false
@@ -1095,17 +933,14 @@ class AuthViewModel : ViewModel() {
 
         val digits = tckn.map { it.toString().toInt() }
 
-        // 10. hane kontrolü
         val oddSum = digits[0] + digits[2] + digits[4] + digits[6] + digits[8]
         val evenSum = digits[1] + digits[3] + digits[5] + digits[7]
         val tenthDigit = ((oddSum * 7) - evenSum) % 10
         if (tenthDigit < 0 || digits[9] != (tenthDigit + 10) % 10 && digits[9] != tenthDigit) {
-            // Alternatif hesaplama
             val altTenth = ((oddSum * 7) - evenSum).mod(10)
             if (digits[9] != altTenth) return false
         }
 
-        // 11. hane kontrolü
         val first10Sum = digits.take(10).sum()
         if (digits[10] != first10Sum % 10) return false
 

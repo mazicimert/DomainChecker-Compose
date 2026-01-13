@@ -71,9 +71,8 @@ class AuthRepository(
                     country = request.country,
                     phone = request.phone,
                     taxNumber = request.vergino,
+                    taxOffice = request.vergidairesi,
                     password = request.password,
-                    gsm = request.gsm,
-                    gsmCode = request.gsmCode,
                     membershipType = request.membershipType,
                     contracts = request.contracts
                 )

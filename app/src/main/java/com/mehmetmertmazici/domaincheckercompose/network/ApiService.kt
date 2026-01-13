@@ -55,9 +55,8 @@ interface ApiService {
         @Field("country") country: String,
         @Field("phone") phone: String,
         @Field("vergino") taxNumber: String,
+        @Field("vergidairesi") taxOffice: String,
         @Field("password") password: String,
-        @Field("gsm") gsm: String,
-        @Field("gsm_code") gsmCode: String = "",
         @Field("uyelik_turu") membershipType: Int,
         @Field("contracts[]") contracts: List<Int>
     ): RegisterResponse

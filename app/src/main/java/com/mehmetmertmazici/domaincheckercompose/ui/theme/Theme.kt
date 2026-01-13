@@ -4,6 +4,8 @@ package com.mehmetmertmazici.domaincheckercompose.ui.theme
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -89,5 +91,70 @@ fun gradientColors(): List<Color> {
         colors.GradientStart,
         colors.GradientCenter,
         colors.GradientEnd
+    )
+}
+
+
+@Composable
+fun getTextFieldColors(colors: AppColors): TextFieldColors {
+    return OutlinedTextFieldDefaults.colors(
+        // Zemin
+        focusedContainerColor = colors.Surface,
+        unfocusedContainerColor = colors.Surface,
+        disabledContainerColor = colors.Surface.copy(alpha = 0.6f),
+        errorContainerColor = colors.Surface,
+
+        // Çerçeve
+        focusedBorderColor = colors.Primary,
+        unfocusedBorderColor = colors.Outline,
+        errorBorderColor = colors.Error,
+        disabledBorderColor = colors.Outline.copy(alpha = 0.5f),
+
+        // Yazı renkleri
+        focusedTextColor = colors.TextPrimary,
+        unfocusedTextColor = colors.TextPrimary,
+        disabledTextColor = colors.TextTertiary,
+        errorTextColor = colors.TextPrimary,
+
+        // Label renkleri (üste kayan hint)
+        focusedLabelColor = colors.Primary,
+        unfocusedLabelColor = colors.TextSecondary,
+
+        disabledLabelColor = colors.TextTertiary,
+        errorLabelColor = colors.Error,
+
+
+        // Placeholder renkleri (içerideki soluk yazı)
+        focusedPlaceholderColor = colors.TextTertiary,
+        unfocusedPlaceholderColor = colors.TextTertiary,
+        disabledPlaceholderColor = colors.TextTertiary.copy(alpha = 0.5f),
+        errorPlaceholderColor = colors.TextTertiary,
+
+        // Cursor
+        cursorColor = colors.Primary,
+        errorCursorColor = colors.Error,
+
+        // Leading/Trailing icon renkleri
+        focusedLeadingIconColor = colors.Primary,
+        unfocusedLeadingIconColor = colors.TextSecondary,
+        disabledLeadingIconColor = colors.TextTertiary,
+        errorLeadingIconColor = colors.Error,
+
+        focusedTrailingIconColor = colors.TextSecondary,
+        unfocusedTrailingIconColor = colors.TextSecondary,
+        disabledTrailingIconColor = colors.TextTertiary,
+        errorTrailingIconColor = colors.Error,
+
+        // Supporting text (hata mesajları vs)
+        focusedSupportingTextColor = colors.TextSecondary,
+        unfocusedSupportingTextColor = colors.TextSecondary,
+        disabledSupportingTextColor = colors.TextTertiary,
+        errorSupportingTextColor = colors.Error,
+
+        // Prefix/Suffix
+        focusedPrefixColor = colors.TextSecondary,
+        unfocusedPrefixColor = colors.TextSecondary,
+        focusedSuffixColor = colors.TextSecondary,
+        unfocusedSuffixColor = colors.TextSecondary
     )
 }

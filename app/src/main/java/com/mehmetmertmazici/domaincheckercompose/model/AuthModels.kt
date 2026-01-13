@@ -68,9 +68,8 @@ data class RegisterRequest(
     val country: String = "TR",
     val phone: String,
     val vergino: String = "",
+    val vergidairesi: String = "",
     val password: String,
-    val gsm: String,
-    val gsmCode: String = "",
 
     @SerializedName("uyelik_turu")
     val membershipType: Int, // 1: Bireysel, 2: Kurumsal
@@ -239,8 +238,8 @@ data class VerifyMailCodeResponse(
             zipCode = null,
             country = null,
             phone = null,
-            gsm = null,
-            taxNumber = null
+            taxNumber = null,
+            taxOffice = null
         )
     }
 }
