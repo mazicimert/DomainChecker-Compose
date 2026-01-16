@@ -11,6 +11,26 @@ data class LoginRequest(
     val password: String
 )
 
+/**
+ * Login başarılı olduğunda message içinde gelen kullanıcı bilgileri
+ */
+data class LoginUserData(
+    @SerializedName("id")
+    val id: Int?,
+
+    @SerializedName("name")
+    val name: String?,
+
+    @SerializedName("surname")
+    val surname: String?,
+
+    @SerializedName("credit")
+    val credit: String?,
+
+    @SerializedName("url")
+    val url: String?
+)
+
 data class LoginResponse(
     @SerializedName("code")
     val code: Int,
@@ -19,21 +39,64 @@ data class LoginResponse(
     val status: String,
 
     @SerializedName("message")
-    val message: String?,
+    val message: Any?, // String "mail" veya LoginUserData object olabilir
 
     @SerializedName("user")
     val user: UserInfo?,
 
     @SerializedName("token")
-    val token: String?
+    val token: String?,
+
+    @SerializedName("clientid")
+    val clientId: Int? = null // 2FA için client ID - Login'de mail doğrulaması gerektiğinde döner
 ) {
     val isSuccess: Boolean
         get() = code == 1 && status == "success"
 
+    /**
+     * Mail doğrulaması gerekiyor mu?
+     * Backend message: "mail" döndüğünde true
+     */
     val requiresMailVerification: Boolean
         get() = isSuccess && message == "mail"
 
+    /**
+     * message alanından kullanıcı bilgilerini çıkarır
+     * Backend başarılı girişte message içinde user data döndürüyor
+     */
+    @Suppress("UNCHECKED_CAST")
+    val loginUserData: LoginUserData?
+        get() {
+            if (message is Map<*, *>) {
+                val map = message as Map<String, Any?>
+                return LoginUserData(
+                    id = (map["id"] as? Number)?.toInt(),
+                    name = map["name"] as? String,
+                    surname = map["surname"] as? String,
+                    credit = map["credit"] as? String,
+                    url = map["url"] as? String
+                )
+            }
+            return null
+        }
 
+    /**
+     * Kullanıcı ID'si - clientId, message veya user'dan alınır
+     */
+    val userId: Int?
+        get() = clientId ?: loginUserData?.id ?: user?.id
+
+    /**
+     * Kullanıcı adı - message'dan veya user'dan alınır
+     */
+    val userName: String?
+        get() = loginUserData?.name ?: user?.name
+
+    /**
+     * Kullanıcı soyadı - message'dan veya user'dan alınır
+     */
+    val userSurname: String?
+        get() = loginUserData?.surname ?: user?.surname
 }
 
 // ============================================
@@ -189,7 +252,7 @@ data class VerifyMailCodeResponse(
     val status: String,
 
     @SerializedName("message")
-    val message: VerificationUserData?,
+    val message: Any?, // String (hata mesajı) veya VerificationUserData object olabilir
 
     @SerializedName("token")
     val token: String?
@@ -198,37 +261,63 @@ data class VerifyMailCodeResponse(
         get() = code == 1 && status == "success"
 
     /**
+     * Hata mesajı - message String ise döner
+     */
+    val errorMessage: String?
+        get() = if (message is String) message else null
+
+    /**
+     * message alanından kullanıcı bilgilerini çıkarır
+     * Backend başarılı doğrulamada message içinde user data döndürüyor
+     */
+    @Suppress("UNCHECKED_CAST")
+    private val verificationUserData: VerificationUserData?
+        get() {
+            if (message is Map<*, *>) {
+                val map = message as Map<String, Any?>
+                return VerificationUserData(
+                    id = (map["id"] as? Number)?.toInt(),
+                    name = map["name"] as? String,
+                    surname = map["surname"] as? String,
+                    credit = map["credit"] as? String,
+                    url = map["url"] as? String
+                )
+            }
+            return null
+        }
+
+    /**
      * Kullanıcı ID'si
      */
     val userId: Int?
-        get() = message?.id
+        get() = verificationUserData?.id
 
     /**
      * Kullanıcı adı
      */
     val userName: String?
-        get() = message?.name
+        get() = verificationUserData?.name
 
     /**
      * Kullanıcı soyadı
      */
     val userSurname: String?
-        get() = message?.surname
+        get() = verificationUserData?.surname
 
     /**
      * Yönlendirme URL'i
      */
     val redirectUrl: String?
-        get() = message?.url
+        get() = verificationUserData?.url
 
     /**
      * Doğrulama sonrası kullanıcı bilgilerini UserInfo'ya dönüştürür
      */
     fun toUserInfo(email: String): UserInfo {
         return UserInfo(
-            id = message?.id,
-            name = message?.name,
-            surname = message?.surname,
+            id = verificationUserData?.id,
+            name = verificationUserData?.name,
+            surname = verificationUserData?.surname,
             email = email,
             companyName = null,
             address = null,

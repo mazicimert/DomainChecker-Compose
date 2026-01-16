@@ -50,7 +50,21 @@ class AppColors(
     val GradientEnd: Color,
     val CardBackground: Color,
     val SemiTransparentBlack: Color,
-    val SemiTransparentWhite: Color
+    val SemiTransparentWhite: Color,
+    // Auth Screen Colors - Yeni eklenen renkler
+    val AuthBackground: Color,
+    val AuthCardBackground: Color,
+    val AuthCardBorder: Color,
+    val AuthInputBackground: Color,
+    val AuthInputBorder: Color,
+    val AuthInputFocusedBorder: Color,
+    val AuthButtonGradientStart: Color,
+    val AuthButtonGradientEnd: Color,
+    val AuthDivider: Color,
+    val AuthHintText: Color,
+    val AuthLinkText: Color,
+    val AuthHeaderText: Color,
+    val AuthSubHeaderText: Color
 )
 
 val LightColors = AppColors(
@@ -109,14 +123,29 @@ val LightColors = AppColors(
     Warning = Color(0xFFF59E0B),
     Info = Color(0xFF3B82F6),
 
-    // Gradient
-    GradientStart = Color(0x97A2B8D2),
-    GradientCenter = Color(0xD77596BA),
-    GradientEnd = Color(0xC35A7CA0),
+    // Gradient - Daha soft ve profesyonel
+    GradientStart = Color(0xFF667EEA),
+    GradientCenter = Color(0xFF5A67D8),
+    GradientEnd = Color(0xFF4C51BF),
 
     CardBackground = Color(0xFFFFFFFF),
     SemiTransparentBlack = Color(0x80000000),
-    SemiTransparentWhite = Color(0x80FFFFFF)
+    SemiTransparentWhite = Color(0x80FFFFFF),
+
+    // Auth Screen Colors - Light Theme
+    AuthBackground = Color(0xFFF8FAFC),
+    AuthCardBackground = Color(0xFFFFFFFF),
+    AuthCardBorder = Color(0xFFE2E8F0),
+    AuthInputBackground = Color(0xFFF8FAFC),
+    AuthInputBorder = Color(0xFFE2E8F0),
+    AuthInputFocusedBorder = Color(0xFF3B82F6),
+    AuthButtonGradientStart = Color(0xFF3B82F6),
+    AuthButtonGradientEnd = Color(0xFF2563EB),
+    AuthDivider = Color(0xFFE2E8F0),
+    AuthHintText = Color(0xFF94A3B8),
+    AuthLinkText = Color(0xFF3B82F6),
+    AuthHeaderText = Color(0xFF1E293B),
+    AuthSubHeaderText = Color(0xFF64748B)
 )
 
 // Dark Theme Colors
@@ -175,11 +204,27 @@ val DarkColors = AppColors(
     Warning = Color(0xFFFBBF24),
     Info = Color(0xFF60A5FA),
 
-    GradientStart = Color(0xFF9FABB8),
-    GradientCenter = Color(0xFF6B7A8A),
-    GradientEnd = Color(0xFF3F4B5C),
+    // Gradient - Dark theme için
+    GradientStart = Color(0xFF1E293B),
+    GradientCenter = Color(0xFF1E3A5F),
+    GradientEnd = Color(0xFF1E293B),
 
     CardBackground = Color(0xFF2A3540),
     SemiTransparentBlack = Color(0xCC000000),
-    SemiTransparentWhite = Color(0x80FFFFFF)
+    SemiTransparentWhite = Color(0x80FFFFFF),
+
+    // Auth Screen Colors - Dark Theme
+    AuthBackground = Color(0xFF0F172A),
+    AuthCardBackground = Color(0xFF1E293B),
+    AuthCardBorder = Color(0xFF334155),
+    AuthInputBackground = Color(0xFF0F172A),
+    AuthInputBorder = Color(0xFF334155),
+    AuthInputFocusedBorder = Color(0xFF60A5FA),
+    AuthButtonGradientStart = Color(0xFF3B82F6),
+    AuthButtonGradientEnd = Color(0xFF2563EB),
+    AuthDivider = Color(0xFF334155),
+    AuthHintText = Color(0xFF64748B),
+    AuthLinkText = Color(0xFF60A5FA),
+    AuthHeaderText = Color(0xFFF1F5F9),
+    AuthSubHeaderText = Color(0xFF94A3B8)
 )

@@ -43,17 +43,26 @@ class SessionManager(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[KEY_IS_LOGGED_IN] = true
             prefs[KEY_TOKEN] = response.token ?: ""
+
+            // Kullanıcı bilgilerini kaydet - önce loginUserData'dan, yoksa user'dan al
+            val userId = response.userId ?: 0
+            val userName = response.userName ?: ""
+            val userSurname = response.userSurname ?: ""
+
+            prefs[KEY_USER_ID] = userId
+            prefs[KEY_USER_NAME] = userName
+            prefs[KEY_USER_SURNAME] = userSurname
+
+            // user objesi varsa ek bilgileri de kaydet
             response.user?.let { user ->
-                prefs[KEY_USER_ID] = user.id ?: 0
                 prefs[KEY_USER_EMAIL] = user.email ?: ""
-                prefs[KEY_USER_NAME] = user.name ?: ""
-                prefs[KEY_USER_SURNAME] = user.surname ?: ""
                 prefs[KEY_USER_PHONE] = user.phone ?: ""
                 prefs[KEY_USER_ADDRESS] = user.address ?: ""
                 prefs[KEY_USER_CITY] = user.city ?: ""
                 prefs[KEY_USER_COUNTRY] = user.country ?: ""
             }
         }
+
         // In-memory session'ı da güncelle
         SessionHolder.setFromLogin(response)
     }

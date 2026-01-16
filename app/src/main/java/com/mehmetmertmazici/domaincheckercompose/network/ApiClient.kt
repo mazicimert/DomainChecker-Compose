@@ -31,7 +31,10 @@ object ApiClient {
             cookies.forEach { newCookie ->
                 cookieStore[host]?.removeAll { it.name == newCookie.name }
                 cookieStore[host]?.add(newCookie)
+                Log.d("COOKIE_DEBUG", "📥 GELEN COOKIE ($host): ${newCookie.name} = ${newCookie.value}")
             }
+
+
 
             Log.d("ApiClient", "Saved ${cookies.size} cookies for $host")
         }
@@ -42,6 +45,16 @@ object ApiClient {
 
             // Süresi dolmuş cookie'leri temizle
             val validCookies = cookies.filter { !it.expiresAt.let { exp -> exp < System.currentTimeMillis() } }
+
+            // --- YENİ EKLENECEK KISIM (Giden Cookie'leri Gör) ---
+            if (validCookies.isNotEmpty()) {
+                validCookies.forEach { cookie ->
+                    Log.d("COOKIE_DEBUG", "📤 GİDEN COOKIE ($host): ${cookie.name} = ${cookie.value}")
+                }
+            } else {
+                Log.d("COOKIE_DEBUG", "❌ GİDEN COOKIE YOK ($host) - Liste boş")
+            }
+
 
             Log.d("ApiClient", "Loading ${validCookies.size} cookies for $host")
             return validCookies
@@ -107,7 +120,7 @@ object ApiClient {
     }
 }
 
-// Basit in-memory session holder (DataStore ile değiştirilecek)
+// Basit in-memory session holder
 object SessionHolder {
     var token: String? = null
     var userId: Int? = null
@@ -121,17 +134,33 @@ object SessionHolder {
         userName = null
     }
 
+    /**
+     * Login response'undan session bilgilerini set eder
+     * Backend message içinde veya user objesinde kullanıcı bilgilerini gönderebilir
+     */
     fun setFromLogin(response: com.mehmetmertmazici.domaincheckercompose.model.LoginResponse) {
         token = response.token
-        userId = response.user?.id
+        // Yeni helper property'leri kullan - message veya user'dan otomatik alır
+        userId = response.userId
         userEmail = response.user?.email
-        userName = response.user?.fullName
+        userName = buildString {
+            append(response.userName ?: "")
+            if (response.userSurname != null) {
+                if (isNotEmpty()) append(" ")
+                append(response.userSurname)
+            }
+        }.trim().ifEmpty { null }
     }
 
+    /**
+     * Register response'undan session bilgilerini set eder
+     */
     fun setFromRegister(response: com.mehmetmertmazici.domaincheckercompose.model.RegisterResponse) {
         token = response.token
         userId = response.user?.id
         userEmail = response.user?.email
-        userName = response.user?.fullName
+        userName = response.user?.let { user ->
+            "${user.name ?: ""} ${user.surname ?: ""}".trim().ifEmpty { null }
+        }
     }
 }

@@ -1,16 +1,27 @@
 package com.mehmetmertmazici.domaincheckercompose.ui.screens.auth
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.LockReset
+import androidx.compose.material.icons.outlined.MarkEmailRead
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -56,16 +67,24 @@ fun ForgotPasswordScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        colors.GradientStart,
-                        colors.GradientCenter,
-                        colors.GradientEnd
+            .background(colors.AuthBackground)
+    ) {
+        // Decorative top gradient
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(280.dp)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            colors.AuthButtonGradientStart,
+                            colors.AuthButtonGradientEnd,
+                            colors.AuthBackground
+                        )
                     )
                 )
-            )
-    ) {
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -75,23 +94,30 @@ fun ForgotPasswordScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp),
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBackClick) {
+                IconButton(
+                    onClick = onBackClick,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.2f))
+                ) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Geri",
                         tint = Color.White
                     )
                 }
 
+                Spacer(modifier = Modifier.width(12.dp))
+
                 Text(
                     text = "Şifremi Unuttum",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.padding(start = 8.dp)
+                    color = Color.White
                 )
             }
 
@@ -102,26 +128,29 @@ fun ForgotPasswordScreen(
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // Icon
-                Surface(
-                    modifier = Modifier.size(100.dp),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = Color.White.copy(alpha = 0.2f)
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (uiState.isEmailSent)
-                                Icons.Default.MarkEmailRead else Icons.Default.LockReset,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(50.dp)
+                Box(
+                    modifier = Modifier
+                        .size(90.dp)
+                        .shadow(
+                            elevation = 16.dp,
+                            shape = CircleShape,
+                            ambientColor = colors.AuthButtonGradientStart.copy(alpha = 0.3f),
+                            spotColor = colors.AuthButtonGradientStart.copy(alpha = 0.3f)
                         )
-                    }
+                        .clip(CircleShape)
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (uiState.isEmailSent)
+                            Icons.Outlined.MarkEmailRead else Icons.Outlined.LockReset,
+                        contentDescription = null,
+                        tint = if (uiState.isEmailSent) colors.Success else colors.AuthButtonGradientStart,
+                        modifier = Modifier.size(45.dp)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -144,92 +173,135 @@ fun ForgotPasswordScreen(
                     else
                         "E-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.8f),
-                    textAlign = TextAlign.Center
+                    color = Color.White.copy(alpha = 0.85f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 // Form Card
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    colors = CardDefaults.cardColors(containerColor = colors.CardBackground),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(
+                            elevation = 8.dp,
+                            shape = RoundedCornerShape(24.dp),
+                            ambientColor = Color.Black.copy(alpha = 0.08f),
+                            spotColor = Color.Black.copy(alpha = 0.08f)
+                        ),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = colors.AuthCardBackground)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
+                            .padding(28.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         if (uiState.isEmailSent) {
                             // Success State
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = colors.Success,
-                                modifier = Modifier.size(64.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .clip(CircleShape)
+                                    .background(colors.Success.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = colors.Success,
+                                    modifier = Modifier.size(48.dp)
+                                )
+                            }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(20.dp))
 
                             Text(
                                 text = "E-posta başarıyla gönderildi",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.Success
+                                fontWeight = FontWeight.SemiBold,
+                                color = colors.Success,
+                                textAlign = TextAlign.Center
                             )
 
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(28.dp))
 
                             Button(
                                 onClick = onNavigateToLogin,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(56.dp),
-                                shape = MaterialTheme.shapes.large,
+                                shape = RoundedCornerShape(16.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = colors.Primary
-                                )
+                                    containerColor = Color.Transparent
+                                ),
+                                contentPadding = PaddingValues()
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Login,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Giriş Sayfasına Dön",
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            brush = Brush.horizontalGradient(
+                                                colors = listOf(
+                                                    colors.AuthButtonGradientStart,
+                                                    colors.AuthButtonGradientEnd
+                                                )
+                                            ),
+                                            shape = RoundedCornerShape(16.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Login,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(
+                                            text = "Giriş Sayfasına Dön",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
                             }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
                             TextButton(
-                                onClick = {
-                                    viewModel.clearForgotPasswordState()
-                                }
+                                onClick = { viewModel.clearForgotPasswordState() }
                             ) {
-                                Text("Tekrar Gönder")
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = colors.AuthLinkText
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Tekrar Gönder",
+                                    color = colors.AuthLinkText,
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
                         } else {
                             // Email Input
-                            OutlinedTextField(
+                            AuthTextField(
                                 value = uiState.email,
                                 onValueChange = viewModel::updateForgotPasswordEmail,
-                                label = { Text("E-posta") },
-                                placeholder = { Text("ornek@email.com") },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Email,
-                                        contentDescription = null,
-                                        tint = colors.Primary
-                                    )
-                                },
+                                label = "E-posta",
+                                placeholder = "ornek@email.com",
+                                leadingIcon = Icons.Outlined.Email,
                                 isError = uiState.emailError != null,
-                                supportingText = uiState.emailError?.let { { Text(it) } },
+                                errorMessage = uiState.emailError,
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Email,
                                     imeAction = ImeAction.Done
@@ -240,16 +312,10 @@ fun ForgotPasswordScreen(
                                         viewModel.sendPasswordResetEmail()
                                     }
                                 ),
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = MaterialTheme.shapes.large,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = colors.Primary,
-                                    unfocusedBorderColor = colors.Outline
-                                )
+                                colors = colors
                             )
 
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(28.dp))
 
                             // Submit Button
                             Button(
@@ -258,35 +324,69 @@ fun ForgotPasswordScreen(
                                     .fillMaxWidth()
                                     .height(56.dp),
                                 enabled = !uiState.isLoading,
-                                shape = MaterialTheme.shapes.large,
+                                shape = RoundedCornerShape(16.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = colors.Primary
-                                )
+                                    containerColor = Color.Transparent,
+                                    disabledContainerColor = colors.AuthDivider
+                                ),
+                                contentPadding = PaddingValues()
                             ) {
-                                if (uiState.isLoading) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(24.dp),
-                                        color = Color.White,
-                                        strokeWidth = 2.dp
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.Default.Send,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Sıfırlama Bağlantısı Gönder",
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            brush = if (!uiState.isLoading) {
+                                                Brush.horizontalGradient(
+                                                    colors = listOf(
+                                                        colors.AuthButtonGradientStart,
+                                                        colors.AuthButtonGradientEnd
+                                                    )
+                                                )
+                                            } else {
+                                                Brush.horizontalGradient(
+                                                    colors = listOf(
+                                                        colors.AuthDivider,
+                                                        colors.AuthDivider
+                                                    )
+                                                )
+                                            },
+                                            shape = RoundedCornerShape(16.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (uiState.isLoading) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            color = Color.White,
+                                            strokeWidth = 2.5.dp
+                                        )
+                                    } else {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Send,
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(10.dp))
+                                            Text(
+                                                text = "Sıfırlama Bağlantısı Gönder",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = Color.White
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
                 // Back to Login
                 if (!uiState.isEmailSent) {
@@ -297,13 +397,18 @@ fun ForgotPasswordScreen(
                     ) {
                         Text(
                             text = "Şifrenizi hatırladınız mı?",
-                            color = Color.White.copy(alpha = 0.8f)
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.AuthSubHeaderText
                         )
-                        TextButton(onClick = onNavigateToLogin) {
+                        TextButton(
+                            onClick = onNavigateToLogin,
+                            contentPadding = PaddingValues(horizontal = 8.dp)
+                        ) {
                             Text(
                                 text = "Giriş Yap",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.AuthLinkText
                             )
                         }
                     }

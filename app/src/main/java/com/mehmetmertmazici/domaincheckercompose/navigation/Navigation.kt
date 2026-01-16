@@ -167,6 +167,9 @@ fun DomainCheckerApp(
                             popUpTo(Screen.Login.route) { inclusive = true }
                         }
                     },
+                    onNavigateToVerification = {
+                        navController.navigate(Screen.MailVerification.route)
+                    },
                     isDarkTheme = isDarkTheme
                 )
             }
@@ -206,6 +209,8 @@ fun DomainCheckerApp(
             }
 
             composable(Screen.MailVerification.route) {
+                val mailVerificationState by authViewModel.mailVerificationState.collectAsState()
+
                 MailVerificationScreen(
                     viewModel = authViewModel,
                     onNavigateToHome = {
@@ -214,8 +219,15 @@ fun DomainCheckerApp(
                         }
                     },
                     onBackClick = {
-                        navController.navigate(Screen.Register.route) {
-                            popUpTo(Screen.MailVerification.route) { inclusive = true }
+                        // Login'den geldiyse Login'e, Register'dan geldiyse Register'a dön
+                        if (mailVerificationState.isFromLogin) {
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(Screen.MailVerification.route) { inclusive = true }
+                            }
+                        } else {
+                            navController.navigate(Screen.Register.route) {
+                                popUpTo(Screen.MailVerification.route) { inclusive = true }
+                            }
                         }
                     },
                     isDarkTheme = isDarkTheme

@@ -94,67 +94,44 @@ fun gradientColors(): List<Color> {
     )
 }
 
-
 @Composable
 fun getTextFieldColors(colors: AppColors): TextFieldColors {
+    // Modern, temiz ve okunabilir input renkleri
     return OutlinedTextFieldDefaults.colors(
-        // Zemin
-        focusedContainerColor = colors.Surface,
-        unfocusedContainerColor = colors.Surface,
-        disabledContainerColor = colors.Surface.copy(alpha = 0.6f),
-        errorContainerColor = colors.Surface,
+        // Zemin: Hafif gri/yumuşak ton (Flat tasarım hissi)
+        focusedContainerColor = colors.SurfaceVariant.copy(alpha = 0.5f),
+        unfocusedContainerColor = colors.SurfaceVariant.copy(alpha = 0.3f),
+        disabledContainerColor = colors.SurfaceVariant.copy(alpha = 0.1f),
+        errorContainerColor = colors.Error.copy(alpha = 0.1f),
 
-        // Çerçeve
+        // Çerçeve: Odaklanılmadığında çok silik veya yok, odaklanınca belirgin
         focusedBorderColor = colors.Primary,
-        unfocusedBorderColor = colors.Outline,
+        unfocusedBorderColor = colors.Outline.copy(alpha = 0.3f), // Daha silik çerçeve
         errorBorderColor = colors.Error,
-        disabledBorderColor = colors.Outline.copy(alpha = 0.5f),
+        disabledBorderColor = colors.Outline.copy(alpha = 0.1f),
 
         // Yazı renkleri
         focusedTextColor = colors.TextPrimary,
         unfocusedTextColor = colors.TextPrimary,
         disabledTextColor = colors.TextTertiary,
-        errorTextColor = colors.TextPrimary,
+        errorTextColor = colors.Error,
 
-        // Label renkleri (üste kayan hint)
+        // Label (Etiket) renkleri
         focusedLabelColor = colors.Primary,
         unfocusedLabelColor = colors.TextSecondary,
-
         disabledLabelColor = colors.TextTertiary,
         errorLabelColor = colors.Error,
 
-
-        // Placeholder renkleri (içerideki soluk yazı)
+        // Placeholder
         focusedPlaceholderColor = colors.TextTertiary,
-        unfocusedPlaceholderColor = colors.TextTertiary,
-        disabledPlaceholderColor = colors.TextTertiary.copy(alpha = 0.5f),
-        errorPlaceholderColor = colors.TextTertiary,
+        unfocusedPlaceholderColor = colors.TextTertiary.copy(alpha = 0.7f),
 
-        // Cursor
-        cursorColor = colors.Primary,
-        errorCursorColor = colors.Error,
-
-        // Leading/Trailing icon renkleri
+        // İkonlar
         focusedLeadingIconColor = colors.Primary,
         unfocusedLeadingIconColor = colors.TextSecondary,
-        disabledLeadingIconColor = colors.TextTertiary,
-        errorLeadingIconColor = colors.Error,
-
         focusedTrailingIconColor = colors.TextSecondary,
         unfocusedTrailingIconColor = colors.TextSecondary,
-        disabledTrailingIconColor = colors.TextTertiary,
-        errorTrailingIconColor = colors.Error,
 
-        // Supporting text (hata mesajları vs)
-        focusedSupportingTextColor = colors.TextSecondary,
-        unfocusedSupportingTextColor = colors.TextSecondary,
-        disabledSupportingTextColor = colors.TextTertiary,
-        errorSupportingTextColor = colors.Error,
-
-        // Prefix/Suffix
-        focusedPrefixColor = colors.TextSecondary,
-        unfocusedPrefixColor = colors.TextSecondary,
-        focusedSuffixColor = colors.TextSecondary,
-        unfocusedSuffixColor = colors.TextSecondary
+        cursorColor = colors.Primary
     )
 }

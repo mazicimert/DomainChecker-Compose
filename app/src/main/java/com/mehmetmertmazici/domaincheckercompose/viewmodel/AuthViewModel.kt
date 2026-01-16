@@ -64,7 +64,8 @@ data class MailVerificationUiState(
     val isLoading: Boolean = false,
     val codeError: String? = null,
     val remainingTime: Int = 120, // 2 dakika countdown
-    val canResend: Boolean = false
+    val canResend: Boolean = false,
+    val isFromLogin: Boolean = false // Login'den gelme durumu - kodu tekrar gönder seçeneğini gizlemek için
 )
 
 // ============================================
@@ -322,17 +323,45 @@ class AuthViewModel : ViewModel() {
             val result = authRepository.login(state.email, state.password)
 
             result.fold(
-                onSuccess = {
+                onSuccess = { response ->
                     _loginState.update { it.copy(isLoading = false) }
-                    sendEffect(AuthEffect.ShowSuccess("Giriş başarılı"))
-                    sendEffect(AuthEffect.NavigateToHome)
+
+                    // DOĞRU YER: Sunucudan cevap geldi
+                    // Not: Doğrulama gerekiyorsa token henüz session'a kaydedilmemiş olabilir (Repository mantığınıza göre)
+                    // Ancak response içindeki token'ı burada görebilirsiniz.
+                    android.util.Log.d("TOKEN_DEBUG", "Gelen Token (Login): ${response.token}")
+                    android.util.Log.d("TOKEN_DEBUG", "Session Token: ${com.mehmetmertmazici.domaincheckercompose.network.SessionHolder.token}")
+
+                    // Mail doğrulaması gerekiyor mu kontrol et
+                    if (response.requiresMailVerification) {
+                        // Mail verification state'i güncelle
+                        _mailVerificationState.update {
+                            it.copy(
+                                clientId = response.userId ?: 0,
+                                email = state.email,
+                                isFromLogin = true, // Login'den geldiğini işaretle
+                                verificationCode = "",
+                                remainingTime = 120,
+                                canResend = false
+                            )
+                        }
+                        sendEffect(AuthEffect.ShowSuccess("Doğrulama kodu e-posta adresinize gönderildi"))
+                        sendEffect(AuthEffect.NavigateToVerification)
+                    } else {
+                        // Doğrulama gerekmiyorsa direkt ana sayfaya git
+                        sendEffect(AuthEffect.ShowSuccess("Giriş başarılı"))
+                        sendEffect(AuthEffect.NavigateToHome)
+                    }
                 },
                 onFailure = { error ->
                     _loginState.update { it.copy(isLoading = false) }
+                    android.util.Log.e("TOKEN_DEBUG", "Login Hatası: ${error.message}")
                     sendEffect(AuthEffect.ShowError(error.message ?: "Giriş başarısız"))
+
                 }
             )
         }
+
     }
 
     fun clearLoginState() {
@@ -783,6 +812,10 @@ class AuthViewModel : ViewModel() {
                         surname = response.userSurname ?: "",
                         token = response.token
                     )
+
+                    // İŞTE ASIL BURADA TOKEN GÖZÜKMELİ
+                    android.util.Log.d("TOKEN_DEBUG", "--- DOĞRULAMA BAŞARILI ---")
+                    android.util.Log.d("TOKEN_DEBUG", "Kaydedilen Token: ${com.mehmetmertmazici.domaincheckercompose.network.SessionHolder.token}")
 
                     sendEffect(AuthEffect.ShowSuccess("Doğrulama başarılı! Hoş geldiniz."))
                     sendEffect(AuthEffect.NavigateToHome)
