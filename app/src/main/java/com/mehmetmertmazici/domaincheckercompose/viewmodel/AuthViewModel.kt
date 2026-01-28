@@ -65,7 +65,8 @@ data class MailVerificationUiState(
     val codeError: String? = null,
     val remainingTime: Int = 120, // 2 dakika countdown
     val canResend: Boolean = false,
-    val isFromLogin: Boolean = false // Login'den gelme durumu - kodu tekrar gönder seçeneğini gizlemek için
+    val isFromLogin: Boolean = false, // Login'den gelme durumu - kodu tekrar gönder seçeneğini gizlemek için
+    val hasFailedAttempt: Boolean = false
 )
 
 // ============================================
@@ -824,7 +825,8 @@ class AuthViewModel : ViewModel() {
                     _mailVerificationState.update {
                         it.copy(
                             isLoading = false,
-                            codeError = error.message ?: "Doğrulama başarısız"
+                            codeError = error.message ?: "Doğrulama başarısız",
+                            hasFailedAttempt = true
                         )
                     }
                     sendEffect(AuthEffect.ShowError(error.message ?: "Doğrulama başarısız"))

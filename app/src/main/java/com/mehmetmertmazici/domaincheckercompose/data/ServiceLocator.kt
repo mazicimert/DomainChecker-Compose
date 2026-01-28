@@ -18,7 +18,7 @@ import com.mehmetmertmazici.domaincheckercompose.data.repository.UserRepository
  * 2. İstediğin yerde erişim:
  *    val authRepo = ServiceLocator.authRepository
  */
-@SuppressLint("StaticFieldLeak") 
+@SuppressLint("StaticFieldLeak")
 object ServiceLocator {
 
     private var _context: Context? = null
@@ -79,7 +79,8 @@ object ServiceLocator {
     val cartRepository: CartRepository
         get() {
             if (_cartRepository == null) {
-                _cartRepository = CartRepository()
+                // Context'i CartRepository'ye geçir (DataStore için gerekli)
+                _cartRepository = CartRepository(context)
             }
             return _cartRepository!!
         }

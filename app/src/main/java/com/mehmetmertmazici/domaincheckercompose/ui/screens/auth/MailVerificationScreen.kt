@@ -87,9 +87,9 @@ fun MailVerificationScreen(
         }
     }
 
-    // 6 hane tamamlandığında otomatik doğrula
+    // 6 hane tamamlandığında otomatik doğrula (sadece ilk denemede, hata olmadıysa)
     LaunchedEffect(uiState.verificationCode) {
-        if (uiState.verificationCode.length == 6 && !uiState.isLoading) {
+        if (uiState.verificationCode.length == 6 && !uiState.isLoading && !uiState.hasFailedAttempt) {
             keyboardController?.hide()
             delay(300) // Küçük bir gecikme ile UX iyileştirme
             viewModel.verifyMailCode()
@@ -568,7 +568,7 @@ private fun OtpDigitBox(
                 )
             )
         } else if (isFocused) {
-            // Burda yanıp sönen cursori oluştrduk
+            // Yanıp sönen cursor
             val cursorVisible = remember { mutableStateOf(true) }
             LaunchedEffect(Unit) {
                 while (true) {

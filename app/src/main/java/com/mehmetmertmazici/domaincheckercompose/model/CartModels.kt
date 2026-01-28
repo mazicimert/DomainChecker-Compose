@@ -8,8 +8,8 @@ import com.google.gson.annotations.SerializedName
 
 data class CartItem(
     val domain: String,
-    val domainType: String = "register", // register, transfer, renew
-    val period: Int = 1, // 1-10 yıl
+    val domainType: String = "register",
+    val period: Int = 1,
     val price: DomainPrice?,
     val status: String = "available",
     val dnsEnabled: Boolean = false,
@@ -23,13 +23,11 @@ data class CartItem(
     val eppCode: String = "",
     val additionalFields: Map<String, String> = emptyMap()
 ) {
-    // Domain'in seçilen periyoda göre fiyatını hesapla
     fun getBasePrice(): Double {
         val priceString = price?.register?.get(period.toString()) ?: "0.0"
         return priceString.replace(",", ".").toDoubleOrNull() ?: 0.0
     }
 
-    // Toplam fiyat (addon'lar dahil)
     fun getTotalPrice(addonFees: AddonFeeResponse?): Double {
         var total = getBasePrice()
 
@@ -49,7 +47,6 @@ data class CartItem(
         return total
     }
 
-    // API'ye gönderilecek formata çevir
     fun toBasketItem(): BasketItem {
         return BasketItem(
             type = "domain",
@@ -131,27 +128,73 @@ data class BasketItem(
 )
 
 // ============================================
-// ADDON FEE - Ek Hizmet Fiyatları
+// ADDON FEE - Ek Hizmet Fiyatları (DÜZELTİLMİŞ)
 // ============================================
 
+/**
+ * API Response Format:
+ * {
+ *   "code": 1,
+ *   "status": "success",
+ *   "message": {
+ *     "currency_id": 1,
+ *     "dns_management": "1.11",
+ *     "email_forwarding": "1.12",
+ *     "id_protection": "1.13"
+ *   }
+ * }
+ */
 data class AddonFeeResponse(
     @SerializedName("code")
-    val code: Int?,
+    val code: Int? = null,
 
     @SerializedName("status")
-    val status: String?,
+    val status: String? = null,
 
-    @SerializedName("dns")
-    val dns: String?,
-
-    @SerializedName("email")
-    val email: String?,
-
-    @SerializedName("idprotect")
-    val idProtect: String?
+    @SerializedName("message")
+    val message: AddonFeeMessage? = null
 ) {
     val isSuccess: Boolean
         get() = code == 1 && status == "success"
+
+    // Convenience accessors with null safety
+    val dns: String?
+        get() = message?.dnsManagement
+
+    val email: String?
+        get() = message?.emailForwarding
+
+    val idProtect: String?
+        get() = message?.idProtection
+
+    val currencyId: Int?
+        get() = message?.currencyId
+
+    // Debug helper
+    override fun toString(): String {
+        return "AddonFeeResponse(code=$code, status=$status, dns=$dns, email=$email, idProtect=$idProtect)"
+    }
+}
+
+/**
+ * Nested message object - MUST be a separate class for Gson to parse correctly
+ */
+data class AddonFeeMessage(
+    @SerializedName("currency_id")
+    val currencyId: Int? = null,
+
+    @SerializedName("dns_management")
+    val dnsManagement: String? = null,
+
+    @SerializedName("email_forwarding")
+    val emailForwarding: String? = null,
+
+    @SerializedName("id_protection")
+    val idProtection: String? = null
+) {
+    override fun toString(): String {
+        return "AddonFeeMessage(dns=$dnsManagement, email=$emailForwarding, idProtect=$idProtection)"
+    }
 }
 
 // ============================================
@@ -166,37 +209,38 @@ data class PaymentMethodsResponse(
     val status: String,
 
     @SerializedName("message")
-    val message: String?,
-
-    @SerializedName("payment_methods")
-    val paymentMethods: List<PaymentMethod>?
+    val message: List<PaymentMethod>?
 ) {
     val isSuccess: Boolean
         get() = code == 1 && status == "success"
+
+    val paymentMethods: List<PaymentMethod>
+        get() = message ?: emptyList()
 }
 
 data class PaymentMethod(
-    @SerializedName("id")
-    val id: String,
+    @SerializedName("module")
+    val module: String,
 
-    @SerializedName("name")
-    val name: String,
+    @SerializedName("displayname")
+    val displayName: String
+) {
+    val isBankTransfer: Boolean
+        get() = module == "banktransfer"
 
-    @SerializedName("type")
-    val type: String?, // credit_card, bank_transfer, balance, etc.
+    val isStripe: Boolean
+        get() = module == "stripe"
 
-    @SerializedName("icon")
-    val icon: String?,
-
-    @SerializedName("description")
-    val description: String?,
-
-    @SerializedName("enabled")
-    val enabled: Boolean?
-)
+    val icon: String
+        get() = when (module) {
+            "banktransfer" -> "🏦"
+            "stripe" -> "💳"
+            else -> "💰"
+        }
+}
 
 // ============================================
-// BANK TRANSFER INFO - Havale Bilgileri
+// BANK TRANSFER INFO
 // ============================================
 
 data class BankTransferInfoResponse(
@@ -240,7 +284,7 @@ data class BankInfo(
 )
 
 // ============================================
-// COMPLETE ORDER - Sipariş Tamamlama
+// COMPLETE ORDER
 // ============================================
 
 data class CompleteOrderRequest(
@@ -290,7 +334,7 @@ data class CompleteOrderResponse(
 }
 
 // ============================================
-// PROMO CODE VALIDATION
+// PROMO CODE
 // ============================================
 
 data class PromoCodeResponse(
@@ -312,7 +356,7 @@ data class PromoCodeResponse(
 
 data class DiscountInfo(
     @SerializedName("type")
-    val type: String?, // percentage, fixed
+    val type: String?,
 
     @SerializedName("value")
     val value: String?,

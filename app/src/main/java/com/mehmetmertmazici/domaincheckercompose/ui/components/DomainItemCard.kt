@@ -1,19 +1,26 @@
 package com.mehmetmertmazici.domaincheckercompose.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mehmetmertmazici.domaincheckercompose.model.Domain
+import com.mehmetmertmazici.domaincheckercompose.model.DomainAddons
 import com.mehmetmertmazici.domaincheckercompose.ui.theme.DarkColors
 import com.mehmetmertmazici.domaincheckercompose.ui.theme.LightColors
 
@@ -22,7 +29,10 @@ fun DomainItemCard(
     domain: Domain,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    isInCart: Boolean = false,
+    onAddToCart: (() -> Unit)? = null,
+    onRemoveFromCart: (() -> Unit)? = null
 ) {
     val colors = if (isDarkTheme) DarkColors else LightColors
 
@@ -31,6 +41,13 @@ fun DomainItemCard(
         "registered" -> Triple(colors.StatusRegistered, "Kayıtlı", "😔")
         else -> Triple(colors.StatusUnknown, "Bilinmiyor", "❓")
     }
+
+    // Cart button animation
+    val cartButtonColor by animateColorAsState(
+        targetValue = if (isInCart) colors.StatusAvailable else colors.Primary,
+        animationSpec = tween(300),
+        label = "cartButtonColor"
+    )
 
     Card(
         onClick = onClick,
@@ -149,23 +166,95 @@ fun DomainItemCard(
                 }
             }
 
-            // Click Hint
-            val hintText = when (domain.status) {
-                "registered" -> "Whois bilgisi için tıklayın"
-                "available" -> "Kayıt için tıklayın"
-                else -> null
-            }
+            // Action Section - Sepete Ekle / Çıkar Butonu
+            if (domain.status == "available" && (onAddToCart != null || onRemoveFromCart != null)) {
+                Spacer(modifier = Modifier.height(12.dp))
 
-            hintText?.let {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (domain.status == "available") colors.StatusAvailableDark
-                    else MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxWidth()
+                HorizontalDivider(
+                    color = colors.Outline.copy(alpha = 0.3f),
+                    modifier = Modifier.padding(vertical = 4.dp)
                 )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Hint Text
+                    Text(
+                        text = if (isInCart) "Sepete eklendi ✓" else "Kayıt için tıklayın",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isInCart) colors.StatusAvailable else colors.StatusAvailableDark
+                    )
+
+                    // Add/Remove Cart Button
+                    if (isInCart && onRemoveFromCart != null) {
+                        // Sepette - Çıkar butonu
+                        FilledTonalButton(
+                            onClick = {
+                                onRemoveFromCart()
+                            },
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = colors.StatusAvailable.copy(alpha = 0.15f),
+                                contentColor = colors.StatusAvailable
+                            ),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Sepette",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    } else if (onAddToCart != null) {
+                        // Sepette değil - Ekle butonu
+                        Button(
+                            onClick = {
+                                onAddToCart()
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = colors.Primary,
+                                contentColor = Color.White
+                            ),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.ShoppingCart,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Sepete Ekle",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            } else {
+                // Kayıtlı domain için sadece hint text
+                val hintText = when (domain.status) {
+                    "registered" -> "Whois bilgisi için tıklayın"
+                    else -> null
+                }
+
+                hintText?.let {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         }
     }
@@ -206,7 +295,7 @@ private fun CategoryChipsRow(
 
 @Composable
 private fun AddonsRow(
-    addons: com.mehmetmertmazici.domaincheckercompose.model.DomainAddons,
+    addons: DomainAddons,
     isDarkTheme: Boolean
 ) {
     Row(
@@ -232,14 +321,18 @@ private fun AddonsRow(
         if (addons.email) {
             Icon(
                 imageVector = Icons.Default.Email,
-                contentDescription = "E-posta Hesabı"
+                contentDescription = "E-posta Hesabı",
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary
             )
         }
 
         if (addons.idprotect) {
             Icon(
                 imageVector = Icons.Default.Security,
-                contentDescription = "Kimlik Koruması"
+                contentDescription = "Kimlik Koruması",
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary
             )
         }
     }

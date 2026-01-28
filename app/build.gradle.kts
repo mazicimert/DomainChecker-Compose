@@ -89,7 +89,6 @@ dependencies {
     // DataStore (Session yönetimi için)
     implementation(libs.androidx.datastore.preferences)
 
-    implementation(libs.persistentcookiejar)
-
+    implementation("com.github.franmontiel:PersistentCookieJar:v1.0.1")
 
 }
