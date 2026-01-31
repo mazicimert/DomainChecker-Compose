@@ -8,6 +8,7 @@ class AppColors(
     val PrimaryDark: Color,
     val PrimaryVariant: Color,
     val PrimaryLight: Color,
+    val PrimaryContainer: Color,
     val OnPrimary: Color,
     val Secondary: Color,
     val SecondaryVariant: Color,
@@ -41,6 +42,7 @@ class AppColors(
     val ChipOtherText: Color,
     val ChipDefaultBg: Color,
     val ChipDefaultText: Color,
+    val SuccessContainer: Color,
     val Success: Color,
     val Error: Color,
     val Warning: Color,
@@ -72,6 +74,7 @@ val LightColors = AppColors(
     PrimaryDark = Color(0xFF1976D2),
     PrimaryVariant = Color(0xFF0D47A1),
     PrimaryLight = Color(0xFFBBDEFB),
+    PrimaryContainer = Color(0xFFE0F2FE),
     OnPrimary = Color(0xFFFFFFFF),
 
     Secondary = Color(0xFF546E7A),
@@ -118,6 +121,7 @@ val LightColors = AppColors(
     ChipDefaultText = Color(0xFF475569),
 
     // Semantic Colors
+    SuccessContainer = Color(0xFFD1FAE5),
     Success = Color(0xFF10B981),
     Error = Color(0xFFEF4444),
     Warning = Color(0xFFF59E0B),
@@ -154,6 +158,7 @@ val DarkColors = AppColors(
     PrimaryDark = Color(0xFF1976D2),
     PrimaryVariant = Color(0xFF0D47A1),
     PrimaryLight = Color(0xFF64B5F6),
+    PrimaryContainer = Color(0xFF004977),
     OnPrimary = Color(0xFFFFFFFF),
 
     Secondary = Color(0xFF78909C),
@@ -199,6 +204,7 @@ val DarkColors = AppColors(
     ChipDefaultBg = Color(0xFF475569),
     ChipDefaultText = Color(0xFFCBD5E0),
 
+    SuccessContainer = Color(0xFF064E3B),
     Success = Color(0xFF34D399),
     Error = Color(0xFFF87171),
     Warning = Color(0xFFFBBF24),

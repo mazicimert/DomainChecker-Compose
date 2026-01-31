@@ -1,0 +1,764 @@
+{
+    "info": {
+        "_postman_id": "73fdecbb-50ae-4196-bc61-0985569d4bda",
+        "name": "devik.eurovdc.eu",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "20450708"
+    },
+    "item": [
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/search",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "urlencoded",
+                    "urlencoded": [
+                        {
+                            "key": "domain",
+                            "value": "vahitakar",
+                            "type": "text"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/search",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "search"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/tlds",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/tlds",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "tlds"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/list_products",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/list_products",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "list_products"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/top_tlds",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/top_tlds",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "top_tlds"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/register",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "urlencoded",
+                    "urlencoded": [
+                        {
+                            "key": "name",
+                            "value": "vahit",
+                            "type": "text"
+                        },
+                        {
+                            "key": "surname",
+                            "value": "akar",
+                            "type": "text"
+                        },
+                        {
+                            "key": "companyname",
+                            "value": "",
+                            "type": "text"
+                        },
+                        {
+                            "key": "email",
+                            "value": "vhtkr6@deneme.com",
+                            "type": "text"
+                        },
+                        {
+                            "key": "address",
+                            "value": "istanbul",
+                            "type": "text"
+                        },
+                        {
+                            "key": "address2",
+                            "value": "istanbul",
+                            "type": "text"
+                        },
+                        {
+                            "key": "city",
+                            "value": "istanbul",
+                            "type": "text"
+                        },
+                        {
+                            "key": "district",
+                            "value": "istanbul",
+                            "type": "text"
+                        },
+                        {
+                            "key": "zipcode",
+                            "value": "34000",
+                            "type": "text"
+                        },
+                        {
+                            "key": "country",
+                            "value": "TR",
+                            "type": "text"
+                        },
+                        {
+                            "key": "phone",
+                            "value": "3242255656",
+                            "type": "text"
+                        },
+                        {
+                            "key": "vergino",
+                            "value": "",
+                            "type": "text"
+                        },
+                        {
+                            "key": "password",
+                            "value": "123123vA",
+                            "type": "text"
+                        },
+                        {
+                            "key": "gsm",
+                            "value": "5376907216",
+                            "type": "text"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/register",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "register"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/login",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "urlencoded",
+                    "urlencoded": [
+                        {
+                            "key": "email",
+                            "value": "vhtkr@deneme.com",
+                            "type": "text"
+                        },
+                        {
+                            "key": "password",
+                            "value": "123123vA",
+                            "type": "text"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/login",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "login"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/additional_fields",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/additional_fields",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "additional_fields"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/search_domain",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "urlencoded",
+                    "urlencoded": [
+                        {
+                            "key": "domain",
+                            "value": "vahitakar",
+                            "type": "text"
+                        },
+                        {
+                            "key": "tld",
+                            "value": "com",
+                            "description": "tr, com.tr",
+                            "type": "text"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/search_domain",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "search_domain"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/ping",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/ping",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "ping"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/test",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "urlencoded",
+                    "urlencoded": [
+                        {
+                            "key": "domain",
+                            "value": "vhtkr",
+                            "type": "text"
+                        },
+                        {
+                            "key": "tld",
+                            "value": "com.tr",
+                            "type": "text"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/test",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "test"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/conf",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/conf/funds",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "conf",
+                        "funds"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/conf/kdv",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/conf/kdv",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "conf",
+                        "kdv"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/userData",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/userData",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "userData"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/whois",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "urlencoded",
+                    "urlencoded": [
+                        {
+                            "key": "domain",
+                            "value": "vahitakar.com",
+                            "type": "text"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/whois",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "whois"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/payment_methods",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/payment_methods",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "payment_methods"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/complete_order",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\r\n\t\"payment_method\": \"halkbank_ik\",\r\n\t\"card_number\": \"5218487962459752\",\r\n\t\"card_cv2\": \"001\",\r\n\t\"card_exp\": \"12/26\",\r\n\t\"promocode\": \"promocode1\",\r\n\t\"basket\": [\r\n\t\t{\r\n\t\t\t\"type\": \"domain\",\r\n\t\t\t\"domaintype\": \"register\",\r\n\t\t\t\"domain\": \"vhtkr10.com.tr\",\r\n\t\t\t\"name\": \"vhtkr10.com.tr\",\r\n\t\t\t\"billingcycle\": \"annually\",\r\n\t\t\t\"price\": {\r\n\t\t\t\t\"categories\": [\r\n\t\t\t\t\t\"Other\"\r\n\t\t\t\t],\r\n\t\t\t\t\"addons\": {\r\n\t\t\t\t\t\"dns\": true,\r\n\t\t\t\t\t\"email\": true,\r\n\t\t\t\t\t\"idprotect\": true\r\n\t\t\t\t},\r\n\t\t\t\t\"group\": \"\",\r\n\t\t\t\t\"register\": {\r\n\t\t\t\t\t\"1\": \"14.95\",\r\n\t\t\t\t\t\"2\": \"29.90\",\r\n\t\t\t\t\t\"3\": \"44.85\",\r\n\t\t\t\t\t\"4\": \"59.80\",\r\n\t\t\t\t\t\"5\": \"74.75\",\r\n\t\t\t\t\t\"6\": \"89.70\",\r\n\t\t\t\t\t\"7\": \"104.65\",\r\n\t\t\t\t\t\"8\": \"119.60\",\r\n\t\t\t\t\t\"9\": \"134.55\",\r\n\t\t\t\t\t\"10\": \"149.50\"\r\n\t\t\t\t},\r\n\t\t\t\t\"transfer\": {\r\n\t\t\t\t\t\"1\": \"14.95\"\r\n\t\t\t\t},\r\n\t\t\t\t\"renew\": {\r\n\t\t\t\t\t\"1\": \"14.95\",\r\n\t\t\t\t\t\"2\": \"29.90\",\r\n\t\t\t\t\t\"3\": \"44.85\",\r\n\t\t\t\t\t\"4\": \"59.80\",\r\n\t\t\t\t\t\"5\": \"74.75\",\r\n\t\t\t\t\t\"6\": \"89.70\",\r\n\t\t\t\t\t\"7\": \"104.65\",\r\n\t\t\t\t\t\"8\": \"119.60\",\r\n\t\t\t\t\t\"9\": \"134.55\"\r\n\t\t\t\t},\r\n\t\t\t\t\"grace_period\": {\r\n\t\t\t\t\t\"days\": 0,\r\n\t\t\t\t\t\"price\": \"€0,00 EUR\"\r\n\t\t\t\t},\r\n\t\t\t\t\"grace_period_days\": 0,\r\n\t\t\t\t\"grace_period_fee\": \"€0,00 EUR\",\r\n\t\t\t\t\"redemption_period\": null\r\n\t\t\t},\r\n\t\t\t\"status\": \"available\",\r\n\t\t\t\"hProductId\": \"6\",\r\n\t\t\t\"hProductName\": \"Premium\",\r\n\t\t\t\"period\": 1,\r\n\t\t\t\"nameserver1\": \"ns1.new.ikwebtasarim.com\",\r\n\t\t\t\"nameserver2\": \"ns2.new.ikwebtasarim.com\",\r\n\t\t\t\"nameserver3\": \"\",\r\n\t\t\t\"nameserver4\": \"\",\r\n\t\t\t\"nameserver5\": \"\",\r\n\t\t\t\"idprotection\": \"false\",\r\n\t\t\t\"additional_fields\": {},\r\n\t\t\t\"total\": \"14.95\",\r\n\t\t\t\"eppcode\": \"\"\r\n\t\t}\r\n\t]\r\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/complete_order",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "complete_order"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/signout",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/signout",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "signout"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/getInvoice/56",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/getInvoice/56",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "getInvoice",
+                        "56"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/getOrder/60",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/getOrder/60",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "getOrder",
+                        "60"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/announcements",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/announcements",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "announcements"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/knowledgebases",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/knowledgebases",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "knowledgebases"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/downloads",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/downloads",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "downloads"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/forget_password",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "urlencoded",
+                    "urlencoded": [
+                        {
+                            "key": "email",
+                            "value": "akarvahit@gmail.com",
+                            "type": "text"
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/forget_password",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "forget_password"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/addon_fee",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/addon_fee",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "addon_fee"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/bank_transfer_info",
+            "request": {
+                "auth": {
+                    "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/bank_transfer_info",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "bank_transfer_info"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "https://devik.eurovdc.eu/tr/api/custom_fields",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://devik.eurovdc.eu/tr/api/custom_fields",
+                    "protocol": "https",
+                    "host": [
+                        "devik",
+                        "eurovdc",
+                        "eu"
+                    ],
+                    "path": [
+                        "tr",
+                        "api",
+                        "custom_fields"
+                    ]
+                }
+            },
+            "response": []
+        }
+    ]
+}

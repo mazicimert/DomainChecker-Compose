@@ -261,6 +261,9 @@ fun DomainCheckerApp(
                     onNavigationClick = {
                         scope.launch { drawerState.open() }
                     },
+                    onCartClick = {
+                        navController.navigate(Screen.Cart.route)
+                    },
                     onHelpClick = onHelpClick,
                     isDarkTheme = isDarkTheme
                 )

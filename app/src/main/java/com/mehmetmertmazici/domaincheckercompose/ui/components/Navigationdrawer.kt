@@ -82,12 +82,14 @@ fun DomainCheckerDrawer(
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Icon(
-                        imageVector = Icons.Default.Domain,
-                        contentDescription = "Domain Icon",
-                        tint = Color.White,
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_isimkayit_logo),
+                        contentDescription = "İsimKayıt Logo",
                         modifier = Modifier
-                            .size(40.dp)
+                            .height(40.dp)
+                            .width(100.dp),
+                        colorFilter = ColorFilter.tint(Color.White),
+                        contentScale = ContentScale.Fit
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))

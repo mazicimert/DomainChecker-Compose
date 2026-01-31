@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -23,6 +24,7 @@ import com.mehmetmertmazici.domaincheckercompose.model.Domain
 import com.mehmetmertmazici.domaincheckercompose.model.DomainAddons
 import com.mehmetmertmazici.domaincheckercompose.ui.theme.DarkColors
 import com.mehmetmertmazici.domaincheckercompose.ui.theme.LightColors
+
 
 @Composable
 fun DomainItemCard(
@@ -49,211 +51,197 @@ fun DomainItemCard(
         label = "cartButtonColor"
     )
 
-    Card(
+    // Premium Card Implementation
+    PremiumCard(
         onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDarkTheme) colors.CardBackground else Color.White
-        ),
-        border = CardDefaults.outlinedCardBorder()
+        modifier = modifier.padding(vertical = 8.dp),
+        isHot = domain.status == "available"
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(8.dp) // Extra internal padding
         ) {
-            // Header Section
+            // Header: Domain Name and Status
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Status Indicator
-                Surface(
-                    modifier = Modifier.size(12.dp),
-                    shape = CircleShape,
-                    color = statusColor
-                ) {}
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // Domain Name
-                Text(
-                    text = domain.domain,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Status Badge with Emoji
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                // Icon Surface
+                IconSurface(
+                    backgroundColor = if (isDarkTheme) colors.SurfaceVariant else colors.Primary.copy(alpha = 0.1f),
+                    iconColor = if (isDarkTheme) colors.Primary else colors.Primary
                 ) {
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        color = statusColor
-                    ) {
+                    val icon = when (domain.status) {
+                        "available" -> Icons.Default.Check
+                        "registered" -> Icons.Default.Language
+                        else -> Icons.Default.Language
+                    }
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = domain.domain,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.TextPrimary
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = CircleShape,
+                            color = statusColor.copy(alpha = 0.15f),
+                            modifier = Modifier.size(8.dp)
+                        ) {}
+                        
+                        Spacer(modifier = Modifier.width(6.dp))
+                        
                         Text(
                             text = statusText,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = statusColor,
+                            fontWeight = FontWeight.Medium
                         )
                     }
-
+                }
+                
+                // Status Emoji Badge
+                Surface(
+                    shape = CircleShape,
+                    color = statusColor.copy(alpha = 0.1f)
+                ) {
                     Text(
                         text = statusEmoji,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(8.dp)
                     )
                 }
             }
+            
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Price Section
+            // Price and Details Section
             domain.price?.let { price ->
                 val registerPrice = price.register?.get("1")
                 val renewPrice = price.renew?.get("1")
 
                 if (registerPrice != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalAlignment = Alignment.Bottom
                     ) {
-                        Text(
-                            text = "€$registerPrice",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Column {
+                            Text(
+                                text = "€$registerPrice",
+                                style = MaterialTheme.typography.displaySmall, // Much larger price
+                                fontWeight = FontWeight.ExtraBold,
+                                color = colors.Primary
+                            )
+                            Text(
+                                text = "/yıl",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = colors.TextSecondary
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
 
                         if (renewPrice != null && renewPrice != registerPrice) {
-                            Text(
-                                text = "Yenileme: €$renewPrice",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "Yenileme",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = colors.TextTertiary
+                                )
+                                Text(
+                                    text = "€$renewPrice",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = colors.TextSecondary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            // Categories
-            domain.price?.categories?.let { categories ->
-                if (categories.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    CategoryChipsRow(
-                        categories = categories,
-                        isDarkTheme = isDarkTheme
-                    )
-                }
-            }
-
-            // Addons Section
-            domain.price?.addons?.let { addons ->
-                if (addons.dns || addons.email || addons.idprotect) {
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    AddonsRow(
-                        addons = addons,
-                        isDarkTheme = isDarkTheme
-                    )
-                }
-            }
-
-            // Action Section - Sepete Ekle / Çıkar Butonu
-            if (domain.status == "available" && (onAddToCart != null || onRemoveFromCart != null)) {
+            // Categories & Addons
+            if ((domain.price?.categories?.isNotEmpty() == true) || 
+                (domain.price?.addons?.let { it.dns || it.email || it.idprotect } == true)) {
+                
+                Spacer(modifier = Modifier.height(20.dp))
+                HorizontalDivider(color = colors.Outline.copy(alpha = 0.1f), thickness = 1.dp)
                 Spacer(modifier = Modifier.height(12.dp))
-
-                HorizontalDivider(
-                    color = colors.Outline.copy(alpha = 0.3f),
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-
+                
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Hint Text
-                    Text(
-                        text = if (isInCart) "Sepete eklendi ✓" else "Kayıt için tıklayın",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (isInCart) colors.StatusAvailable else colors.StatusAvailableDark
-                    )
+                    // Categories (Chips)
+                    domain.price?.categories?.let { categories ->
+                         if (categories.isNotEmpty()) {
+                            CategoryChipsRow(categories = categories, isDarkTheme = isDarkTheme)
+                        }
+                    }
+                    
+                    // Addons Icons
+                    domain.price?.addons?.let { addons ->
+                         if (addons.dns || addons.email || addons.idprotect) {
+                            AddonsRow(addons = addons, isDarkTheme = isDarkTheme)
+                        }
+                    }
+                }
+            }
 
-                    // Add/Remove Cart Button
+            // Action Button (Bottom Right)
+            if (domain.status == "available" && (onAddToCart != null || onRemoveFromCart != null)) {
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End // Align to right
+                ) {
                     if (isInCart && onRemoveFromCart != null) {
-                        // Sepette - Çıkar butonu
-                        FilledTonalButton(
-                            onClick = {
-                                onRemoveFromCart()
-                            },
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = colors.StatusAvailable.copy(alpha = 0.15f),
-                                contentColor = colors.StatusAvailable
+                        Button(
+                            onClick = onRemoveFromCart,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = colors.SuccessContainer,
+                                contentColor = colors.Success
                             ),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                            modifier = Modifier.scaleClick(onClick = onRemoveFromCart)
                         ) {
-                            Icon(
-                                imageVector = Icons.Filled.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Sepette",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Sepetinizde", fontWeight = FontWeight.Bold)
                         }
                     } else if (onAddToCart != null) {
-                        // Sepette değil - Ekle butonu
                         Button(
-                            onClick = {
-                                onAddToCart()
-                            },
+                            onClick = onAddToCart,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = colors.Primary,
                                 contentColor = Color.White
                             ),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                            shape = RoundedCornerShape(12.dp), // More rounded
+                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                            modifier = Modifier.scaleClick(onClick = onAddToCart)
                         ) {
-                            Icon(
-                                imageVector = Icons.Filled.ShoppingCart,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Sepete Ekle",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Sepete Ekle", fontWeight = FontWeight.Bold)
                         }
                     }
-                }
-            } else {
-                // Kayıtlı domain için sadece hint text
-                val hintText = when (domain.status) {
-                    "registered" -> "Whois bilgisi için tıklayın"
-                    else -> null
-                }
-
-                hintText?.let {
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.fillMaxWidth()
-                    )
                 }
             }
         }
@@ -268,7 +256,7 @@ private fun CategoryChipsRow(
     val colors = if (isDarkTheme) DarkColors else LightColors
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.wrapContentWidth(), // use wrapContentWidth instead of fillMaxWidth
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         categories.forEach { category ->
@@ -299,7 +287,7 @@ private fun AddonsRow(
     isDarkTheme: Boolean
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.wrapContentWidth(), // use wrapContentWidth instead of fillMaxWidth
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {

@@ -1,20 +1,25 @@
 package com.mehmetmertmazici.domaincheckercompose.ui.components
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -34,63 +39,52 @@ fun LoadingModal(
             onDismissRequest = { /* Non-dismissible */ },
             properties = DialogProperties(
                 dismissOnBackPress = false,
-                dismissOnClickOutside = false
+                dismissOnClickOutside = false,
+                usePlatformDefaultWidth = false // Allow full customization
             )
         ) {
-            Card(
-                modifier = Modifier
-                    .width(280.dp)
-                    .height(320.dp),
-                shape = MaterialTheme.shapes.extraLarge,
-                elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
             ) {
-                Box(
+                Surface(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    colors.Primary,
-                                    colors.PrimaryDark
-                                )
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
+                        .width(300.dp)
+                        .wrapContentHeight(),
+                    shape = RoundedCornerShape(32.dp),
+                    color = colors.Surface.copy(alpha = 0.95f), // Glass-like high opacity
+                    shadowElevation = 24.dp,
+                    border = BorderStroke(1.dp, Brush.linearGradient(
+                        listOf(colors.Outline.copy(alpha = 0.2f), Color.Transparent)
+                    ))
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
+                        // Custom Pulse Animation
+                        PulseLoadingAnimation(color = colors.Primary)
+
                         Spacer(modifier = Modifier.height(32.dp))
-
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(64.dp),
-                            color = Color.White,
-                            trackColor = Color.White.copy(alpha = 0.3f),
-                            strokeWidth = 6.dp
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
 
                         Text(
                             text = "Sorgulanıyor...",
-                            style = MaterialTheme.typography.headlineSmall,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = colors.TextPrimary
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Domain bilgileri kontrol ediliyor",
+                            text = "Domain müsaitlik durumu\nkontrol ediliyor",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.8f)
+                            color = colors.TextSecondary,
+                            textAlign = TextAlign.Center
                         )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        AnimatedDots()
                     }
                 }
             }
@@ -99,36 +93,56 @@ fun LoadingModal(
 }
 
 @Composable
-private fun AnimatedDots() {
-    val infiniteTransition = rememberInfiniteTransition(label = "dots")
+private fun PulseLoadingAnimation(color: Color) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "alpha"
+    )
 
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.size(80.dp)
     ) {
-        repeat(3) { index ->
-            val alpha by infiniteTransition.animateFloat(
-                initialValue = 0.4f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(
-                        durationMillis = 600,
-                        delayMillis = index * 200,
-                        easing = LinearEasing
-                    ),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "dot_$index"
-            )
-
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .background(
-                        color = Color.White.copy(alpha = alpha),
-                        shape = CircleShape
-                    )
-            )
+        // Outer ripple
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .scale(scale)
+                .background(color.copy(alpha = alpha), CircleShape)
+        )
+        
+        // Inner icon circle
+        Surface(
+            modifier = Modifier.size(56.dp),
+            shape = CircleShape,
+            color = color.copy(alpha = 0.1f),
+            border = BorderStroke(2.dp, color.copy(alpha = 0.2f))
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
         }
     }
 }
@@ -150,11 +164,12 @@ fun DomainSuggestionCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = MaterialTheme.shapes.large,
+        shape = RoundedCornerShape(24.dp), // Extra Large
         colors = CardDefaults.cardColors(
-            containerColor = colors.Info // Mavi bilgi rengi
+            containerColor = colors.Surface.copy(alpha = 0.9f) // Light glass
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        border = BorderStroke(1.dp, colors.Primary.copy(alpha = 0.2f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(
             modifier = Modifier
@@ -168,48 +183,53 @@ fun DomainSuggestionCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Lightbulb,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    IconSurface(
+                        backgroundColor = colors.PrimaryContainer,
+                        iconColor = colors.Primary,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Lightbulb,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
 
                     Spacer(modifier = Modifier.width(12.dp))
 
                     Text(
-                        text = "Şunu mu demek istediniz?",
+                        text = "Bunu mu demek istediniz?",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = colors.TextPrimary
                     )
                 }
 
                 IconButton(
                     onClick = onClose,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Close,
                         contentDescription = "Kapat",
-                        tint = Color.White
+                        tint = colors.TextTertiary,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Description
+            // Context Text
             Text(
-                text = "'$originalDomain' hatalı yazılmış olabilir. Aşağıdaki önerilerden birini seçebilirsiniz:",
+                text = "'$originalDomain' hatalı yazılmış olabilir. Aşağıdakilerden birini seçebilirsiniz:",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.9f)
+                color = colors.TextSecondary
             )
 
-            // Suggestions - FlowRow kullanıyoruz ki taşmasın
+            // Suggestions Chips
             if (suggestions.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -228,7 +248,7 @@ fun DomainSuggestionCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Action Buttons
             Row(
@@ -238,35 +258,34 @@ fun DomainSuggestionCard(
             ) {
                 TextButton(
                     onClick = onHelp,
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White)
+                    colors = ButtonDefaults.textButtonColors(contentColor = colors.TextSecondary)
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Help,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "Yardım")
+                    Text(text = "Yardım", style = MaterialTheme.typography.labelMedium)
                 }
 
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(8.dp))
 
-                Button(
+                OutlinedButton(
                     onClick = onTryAnyway,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White.copy(alpha = 0.2f),
-                        contentColor = Color.White
+                    border = BorderStroke(1.dp, colors.Outline.copy(alpha = 0.3f)),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = colors.TextPrimary
                     ),
-                    elevation = null
+                    contentPadding = PaddingValues(horizontal = 16.dp)
                 ) {
-                    Text(text = "Yine de Ara")
+                    Text(text = "Yine de Ara", style = MaterialTheme.typography.labelMedium)
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SuggestionChip(
     suggestion: DomainCorrector.Suggestion,
@@ -274,30 +293,28 @@ private fun SuggestionChip(
     isDarkTheme: Boolean
 ) {
     val colors = if (isDarkTheme) DarkColors else LightColors
+    val isHighConfidence = suggestion.confidenceScore >= 0.9
 
-    // Skora göre renk belirleme (Yüksek skor -> yeşilimsi, Düşük -> normal)
-    val containerColor = if (suggestion.confidenceScore >= 0.9) {
-        Color.White
-    } else {
-        Color.White.copy(alpha = 0.9f)
-    }
-
-    val textColor = colors.PrimaryDark
-
-    ElevatedAssistChip(
+    Surface(
         onClick = onClick,
-        label = {
+        shape = RoundedCornerShape(12.dp),
+        color = if (isHighConfidence) colors.Primary.copy(alpha = 0.1f) else colors.Surface,
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (isHighConfidence) colors.Primary else colors.Outline.copy(alpha = 0.2f)
+        ),
+        modifier = Modifier.height(32.dp)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.padding(horizontal = 12.dp)
+        ) {
             Text(
                 text = suggestion.domain,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier.padding(vertical = 4.dp)
+                style = MaterialTheme.typography.labelLarge,
+                color = if (isHighConfidence) colors.Primary else colors.TextPrimary,
+                fontWeight = if (isHighConfidence) FontWeight.Bold else FontWeight.Medium
             )
-        },
-        colors = AssistChipDefaults.elevatedAssistChipColors(
-            containerColor = containerColor,
-            labelColor = textColor
-        ),
-        border = null, // Border yok, daha temiz görünüm
-        elevation = AssistChipDefaults.elevatedAssistChipElevation(elevation = 2.dp)
-    )
+        }
+    }
 }

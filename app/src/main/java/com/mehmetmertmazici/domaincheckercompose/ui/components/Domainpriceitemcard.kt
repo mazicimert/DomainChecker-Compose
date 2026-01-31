@@ -1,6 +1,11 @@
 package com.mehmetmertmazici.domaincheckercompose.ui.components
 
+
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,118 +28,141 @@ fun DomainPriceItemCard(
     val colors = if (isDarkTheme) DarkColors else LightColors
     val tld = getTLD(domain)
 
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = colors.CardBackground
-        ),
-        border = CardDefaults.outlinedCardBorder()
+    val isHot = domain.price?.group == "hot"
+
+    PremiumCard(
+        modifier = modifier.padding(vertical = 6.dp),
+        isHot = isHot
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
+        // Header Section
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Header Section
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Domain Extension
+            // Domain Extension
+            Row {
                 Text(
-                    text = ".$tld",
+                    text = ".",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                    modifier = Modifier.alignByBaseline()
+                )
+                Text(
+                    text = tld,
                     style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.alignByBaseline()
+                )
+            }
+
+            // Hot Badge with Glow Effect
+            if (isHot) {
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = colors.ChipHotBg.copy(alpha = 0.2f),
+                    border = BorderStroke(1.dp, colors.ChipHotBg.copy(alpha = 0.5f))
+                ) {
+                    Text(
+                        text = "🔥 HOT",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.ChipHotText,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Price Grid
+        domain.price?.let { price ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Register Price
+                price.register?.get("1")?.let { registerPrice ->
+                    PriceColumn(
+                        label = "Kayıt",
+                        price = "€$registerPrice",
+                        color = colors.Success
+                    )
+                }
+                
+                // Vertical Divider
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(32.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        .align(Alignment.CenterVertically)
                 )
 
-                // Hot Badge
-                if (domain.price?.group == "hot") {
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        color = colors.ChipHotBg
-                    ) {
-                        Text(
-                            text = "🔥 HOT",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.ChipHotText,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                    }
+                // Transfer Price
+                price.transfer?.get("1")?.let { transferPrice ->
+                    PriceColumn(
+                        label = "Transfer",
+                        price = "€$transferPrice",
+                        color = colors.Info
+                    )
+                }
+                
+                 // Vertical Divider
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(32.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        .align(Alignment.CenterVertically)
+                )
+
+                // Renew Price
+                price.renew?.get("1")?.let { renewPrice ->
+                    PriceColumn(
+                        label = "Yenileme",
+                        price = "€$renewPrice",
+                        color = colors.Warning
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Price Grid
-            domain.price?.let { price ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    // Register Price
-                    price.register?.get("1")?.let { registerPrice ->
-                        PriceColumn(
-                            label = "Kayıt",
-                            price = "€$registerPrice",
-                            color = colors.Success,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+            // Categories
+            price.categories?.let { categories ->
+                if (categories.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        categories.forEach { category ->
+                            val (bgColor, textColor) = when (category.lowercase()) {
+                                "popular" -> colors.ChipPopularBg to colors.ChipPopularText
+                                "other" -> colors.ChipOtherBg to colors.ChipOtherText
+                                else -> colors.ChipDefaultBg to colors.ChipDefaultText
+                            }
 
-                    // Transfer Price
-                    price.transfer?.get("1")?.let { transferPrice ->
-                        PriceColumn(
-                            label = "Transfer",
-                            price = "€$transferPrice",
-                            color = colors.Info,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    // Renew Price
-                    price.renew?.get("1")?.let { renewPrice ->
-                        PriceColumn(
-                            label = "Yenileme",
-                            price = "€$renewPrice",
-                            color = colors.Warning,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Categories
-                price.categories?.let { categories ->
-                    if (categories.isNotEmpty()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            categories.forEach { category ->
-                                val (bgColor, textColor) = when (category.lowercase()) {
-                                    "popular" -> colors.ChipPopularBg to colors.ChipPopularText
-                                    "other" -> colors.ChipOtherBg to colors.ChipOtherText
-                                    else -> colors.ChipDefaultBg to colors.ChipDefaultText
-                                }
-
-                                Surface(
-                                    shape = MaterialTheme.shapes.small,
-                                    color = bgColor
-                                ) {
-                                    Text(
-                                        text = category,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = textColor,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
+                            Surface(
+                                shape = MaterialTheme.shapes.medium, // Softer corners
+                                color = bgColor.copy(alpha = 0.2f), // More transparent
+                                border = BorderStroke(1.dp, bgColor.copy(alpha = 0.4f)) // Subtle border
+                            ) {
+                                Text(
+                                    text = category.uppercase(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = textColor,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                )
                             }
                         }
                     }

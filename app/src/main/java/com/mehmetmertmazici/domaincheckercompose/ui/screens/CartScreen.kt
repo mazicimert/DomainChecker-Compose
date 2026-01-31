@@ -1,11 +1,19 @@
 package com.mehmetmertmazici.domaincheckercompose.ui.screens
 
+import com.mehmetmertmazici.domaincheckercompose.ui.components.AnimatedListItem
+import com.mehmetmertmazici.domaincheckercompose.ui.components.GradientBackground
+import com.mehmetmertmazici.domaincheckercompose.ui.components.scaleClick
 import android.widget.Toast
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -13,6 +21,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -22,7 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mehmetmertmazici.domaincheckercompose.model.CartItem
-import com.mehmetmertmazici.domaincheckercompose.ui.components.GradientBackground
+import com.mehmetmertmazici.domaincheckercompose.ui.components.IconSurface
 import com.mehmetmertmazici.domaincheckercompose.ui.theme.DarkColors
 import com.mehmetmertmazici.domaincheckercompose.ui.theme.LightColors
 import com.mehmetmertmazici.domaincheckercompose.viewmodel.CartEffect
@@ -44,6 +53,7 @@ fun CartScreen(
     val colors = if (isDarkTheme) DarkColors else LightColors
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    var showClearCartDialog by remember { mutableStateOf(false) }
 
     // Effect handling
     LaunchedEffect(key1 = true) {
@@ -65,63 +75,127 @@ fun CartScreen(
         }
     }
 
+    // Confirmation Dialog
+    if (showClearCartDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearCartDialog = false },
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .background(colors.Error.copy(alpha = 0.1f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteSweep,
+                        contentDescription = null,
+                        tint = colors.Error,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            },
+            title = {
+                Text(
+                    text = "Sepeti Temizle?",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.headlineSmall,
+                     textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Text(
+                    text = "Sepetinizdeki tüm ürünler silinecek. Bu işlemi onaylıyor musunuz?",
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.clearCart()
+                        showClearCartDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.Error),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.height(48.dp).fillMaxWidth()
+                ) {
+                    Text("Evet, Temizle", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showClearCartDialog = false },
+                    modifier = Modifier.height(48.dp).fillMaxWidth()
+                ) {
+                    Text("Vazgeç", color = colors.TextSecondary)
+                }
+            },
+            shape = RoundedCornerShape(28.dp),
+            containerColor = colors.Surface,
+            tonalElevation = 6.dp
+        )
+    }
+
     GradientBackground(modifier = modifier) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
         ) {
-            // Top App Bar
-            CartTopBar(
-                itemCount = uiState.itemCount,
-                onBackClick = onBackClick,
-                onClearCart = { viewModel.clearCart() },
-                showClearButton = !uiState.isEmpty
-            )
-
-            // Content
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
+            Column(
+                modifier = Modifier.fillMaxSize()
             ) {
-                if (uiState.isEmpty) {
-                    EmptyCartView(
-                        onSearchClick = onNavigateToSearch,
-                        isDarkTheme = isDarkTheme,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                } else {
-                    CartContent(
-                        uiState = uiState,
-                        viewModel = viewModel,
-                        isDarkTheme = isDarkTheme
-                    )
-                }
+                // Modern Header
+                CartTopBar(
+                    itemCount = uiState.itemCount,
+                    onBackClick = onBackClick,
+                    onClearCart = { showClearCartDialog = true },
+                    showClearButton = !uiState.isEmpty
+                )
 
-                // Loading overlay
-                if (uiState.isLoading) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.3f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = colors.Primary)
+                // Scrollable Content
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    if (uiState.isEmpty) {
+                        EmptyCartView(
+                            onSearchClick = onNavigateToSearch,
+                            isDarkTheme = isDarkTheme,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    } else {
+                        CartContent(
+                            uiState = uiState,
+                            viewModel = viewModel,
+                            isDarkTheme = isDarkTheme
+                        )
+                    }
+
+                    // Loading overlay
+                    if (uiState.isLoading) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.3f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = colors.Primary)
+                        }
                     }
                 }
             }
-
-            // Bottom Summary Bar (only when cart has items)
-            AnimatedVisibility(
-                visible = !uiState.isEmpty,
-                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
-            ) {
-                CartSummaryBar(
+            
+            // Floating Bottom Summary Bar
+            if (!uiState.isEmpty) {
+                 CartSummaryBar(
                     uiState = uiState,
                     onCheckoutClick = { viewModel.proceedToCheckout() },
-                    isDarkTheme = isDarkTheme
+                    isDarkTheme = isDarkTheme,
+                    modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }
         }
@@ -138,63 +212,51 @@ private fun CartTopBar(
     onClearCart: () -> Unit,
     showClearButton: Boolean
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = Color.Transparent
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 20.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
+        // Back Button with Glass effect
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = Color.White.copy(alpha = 0.1f),
+            modifier = Modifier.size(44.dp),
+            onClick = onBackClick
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Geri",
-                        tint = Color.White
-                    )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = "Sepetim",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-
-                    if (itemCount > 0) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Badge(
-                            containerColor = Color.White,
-                            contentColor = MaterialTheme.colorScheme.primary
-                        ) {
-                            Text(text = itemCount.toString())
-                        }
-                    }
-                }
-
-                if (showClearButton) {
-                    IconButton(onClick = onClearCart) {
-                        Icon(
-                            imageVector = Icons.Default.DeleteSweep,
-                            contentDescription = "Sepeti Temizle",
-                            tint = Color.White
-                        )
-                    }
-                }
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Geri",
+                    tint = Color.White
+                )
             }
+        }
+
+        // Title
+        Text(
+            text = "Alışveriş Sepeti (${itemCount})",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+
+        // Clear Action
+        if (showClearButton) {
+            TextButton(
+                onClick = onClearCart,
+                colors = ButtonDefaults.textButtonColors(contentColor = Color.White.copy(alpha = 0.8f))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DeleteSweep,
+                    contentDescription = "Temizle",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        } else {
+            Spacer(modifier = Modifier.size(44.dp)) // Balance layout
         }
     }
 }
@@ -215,7 +277,9 @@ private fun CartContent(
     ) {
         // Info Card
         item {
-            CartInfoCard(isDarkTheme = isDarkTheme)
+            AnimatedListItem {
+                CartInfoCard(isDarkTheme = isDarkTheme)
+            }
         }
 
         // Cart Items
@@ -223,17 +287,21 @@ private fun CartContent(
             items = uiState.cartItems,
             key = { it.domain }
         ) { cartItem ->
-            CartItemCard(
-                item = cartItem,
-                uiState = uiState, // Pass full uiState for safe fee getters
-                onPeriodChange = { period -> viewModel.updatePeriod(cartItem.domain, period) },
-                onToggleDns = { viewModel.toggleDns(cartItem.domain) },
-                onToggleEmail = { viewModel.toggleEmail(cartItem.domain) },
-                onToggleIdProtect = { viewModel.toggleIdProtect(cartItem.domain) },
-                onRemove = { viewModel.removeFromCart(cartItem.domain) },
-                itemTotal = viewModel.calculateItemTotal(cartItem),
-                isDarkTheme = isDarkTheme
-            )
+            val index = uiState.cartItems.indexOf(cartItem)
+            
+            AnimatedListItem(delayMillis = 100 + (index * 80)) {
+                CartItemCard(
+                    item = cartItem,
+                    uiState = uiState, // Pass full uiState for safe fee getters
+                    onPeriodChange = { period -> viewModel.updatePeriod(cartItem.domain, period) },
+                    onToggleDns = { viewModel.toggleDns(cartItem.domain) },
+                    onToggleEmail = { viewModel.toggleEmail(cartItem.domain) },
+                    onToggleIdProtect = { viewModel.toggleIdProtect(cartItem.domain) },
+                    onRemove = { viewModel.removeFromCart(cartItem.domain) },
+                    itemTotal = viewModel.calculateItemTotal(cartItem),
+                    isDarkTheme = isDarkTheme
+                )
+            }
         }
 
         // Bottom spacing for summary bar
@@ -282,11 +350,14 @@ private fun CartInfoCard(isDarkTheme: Boolean) {
 // ============================================
 // CART ITEM CARD
 // ============================================
-@OptIn(ExperimentalMaterial3Api::class)
+// ============================================
+// CART ITEM CARD
+// ============================================
+@OptIn(ExperimentalAnimationApi::class, ExperimentalLayoutApi::class)
 @Composable
 private fun CartItemCard(
     item: CartItem,
-    uiState: CartUiState, // Use uiState for safe fee getters
+    uiState: CartUiState,
     onPeriodChange: (Int) -> Unit,
     onToggleDns: () -> Unit,
     onToggleEmail: () -> Unit,
@@ -297,183 +368,196 @@ private fun CartItemCard(
 ) {
     val colors = if (isDarkTheme) DarkColors else LightColors
     val priceFormat = remember { DecimalFormat("#,##0.00") }
-    var expanded by remember { mutableStateOf(false) }
-
+    
+    // Glassmorphic Card Container
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(24.dp),
+                spotColor = colors.Primary.copy(alpha = 0.15f)
+            ),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = colors.CardBackground
+            containerColor = colors.Surface.copy(alpha = 0.8f) // Glass-like transparency
         ),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        border = BorderStroke(1.dp, colors.Outline.copy(alpha = 0.1f))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(20.dp)
         ) {
-            // Domain Header
+            // Header: Icon + Domain Name + Remove
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
+                // Domain Icon
+                IconSurface(
+                    backgroundColor = colors.Primary.copy(alpha = 0.1f),
+                    iconColor = colors.Primary,
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Language,
                         contentDescription = null,
-                        tint = colors.Primary,
                         modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = item.domain,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = colors.TextPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Text(
+                        text = "Kayıt Ücreti: €${item.price?.register?.get(item.period.toString()) ?: "0.00"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.TextTertiary
+                    )
                 }
 
                 IconButton(
                     onClick = onRemove,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(colors.Error.copy(alpha = 0.1f), CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Kaldır",
-                        tint = colors.Error
+                        tint = colors.Error,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Period Selection
+            // Period Selector (Modern Pill/Slider Style)
+            Text(
+                text = "Kayıt Süresi",
+                style = MaterialTheme.typography.labelMedium,
+                color = colors.TextSecondary,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            
+            // Horizontal scrollable years for modern selection
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "Kayıt Süresi",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.TextSecondary
-                )
-
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = it }
-                ) {
-                    OutlinedTextField(
-                        value = "${item.period} Yıl",
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                        },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .width(120.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = colors.Primary,
-                            unfocusedBorderColor = colors.Outline
-                        ),
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            color = colors.TextPrimary
-                        ),
-                        singleLine = true
+                (1..10).forEach { year -> // Showing 1-5 years for cleaner UI, could expand
+                    val isSelected = item.period == year
+                    val containerColor by animateColorAsState(
+                        if (isSelected) colors.Primary else colors.SurfaceVariant.copy(alpha = 0.5f)
                     )
-
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                    val contentColor by animateColorAsState(
+                        if (isSelected) Color.White else colors.TextSecondary
+                    )
+                    
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = containerColor,
+                        modifier = Modifier
+                            .height(36.dp)
+                            .clickable { onPeriodChange(year) },
+                        border = if (!isSelected) BorderStroke(1.dp, colors.Outline.copy(alpha = 0.2f)) else null
                     ) {
-                        (1..10).forEach { year ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        "$year Yıl",
-                                        color = colors.TextPrimary
-                                    )
-                                },
-                                onClick = {
-                                    onPeriodChange(year)
-                                    expanded = false
-                                }
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        ) {
+                            Text(
+                                text = "$year Yıl",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = contentColor,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+                
+                // "+ More" indicator if needed, or just let scroll
+                if (item.period > 5) {
+                     Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = colors.Primary,
+                        modifier = Modifier.height(36.dp)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                             modifier = Modifier.padding(horizontal = 16.dp)
+                        ) {
+                            Text(
+                                text = "${item.period} Yıl",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = Color.White
                             )
                         }
                     }
                 }
             }
 
-            // Base Price
-            val basePrice = item.price?.register?.get(item.period.toString()) ?: "0.00"
-            Text(
-                text = "Kayıt Ücreti: €$basePrice",
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.TextTertiary,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+            Spacer(modifier = Modifier.height(24.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            HorizontalDivider(color = colors.Outline.copy(alpha = 0.3f))
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Addon Services
+            // Addons (Horizontal Chips)
             Text(
                 text = "Ek Hizmetler",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = colors.TextPrimary
+                style = MaterialTheme.typography.labelMedium,
+                color = colors.TextSecondary,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
+            
+            FlowRow(
+                 modifier = Modifier.fillMaxWidth(),
+                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                 verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // DNS
+                AddonChip(
+                    title = "DNS",
+                    price = uiState.dnsFee,
+                    checked = item.dnsEnabled,
+                    onToggle = onToggleDns,
+                    icon = Icons.Default.Dns, // Dns icon
+                    isDarkTheme = isDarkTheme
+                )
+                
+                // Email
+                AddonChip(
+                    title = "E-posta",
+                    price = uiState.emailFee,
+                    checked = item.emailEnabled,
+                    onToggle = onToggleEmail,
+                    icon = Icons.Default.Email,
+                    isDarkTheme = isDarkTheme
+                )
+                
+                // ID Protect
+                AddonChip(
+                    title = "Gizlilik",
+                    price = uiState.idProtectFee,
+                    checked = item.idProtectEnabled,
+                    onToggle = onToggleIdProtect,
+                    icon = Icons.Default.Shield, // Shield icon
+                    isDarkTheme = isDarkTheme
+                )
+            }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // DNS Management - use uiState.dnsFee for safe value
-            AddonCheckboxRow(
-                title = "DNS Yönetimi",
-                subtitle = "Özel DNS kayıtları yönetin",
-                price = uiState.dnsFee,
-                checked = item.dnsEnabled,
-                onCheckedChange = onToggleDns,
-                icon = Icons.Default.Dns,
-                isDarkTheme = isDarkTheme
-            )
-
-            // Email Forwarding - use uiState.emailFee for safe value
-            AddonCheckboxRow(
-                title = "E-posta Yönlendirme",
-                subtitle = "E-posta adresleri oluşturun",
-                price = uiState.emailFee,
-                checked = item.emailEnabled,
-                onCheckedChange = onToggleEmail,
-                icon = Icons.Default.Email,
-                isDarkTheme = isDarkTheme
-            )
-
-            // ID Protection - use uiState.idProtectFee for safe value
-            AddonCheckboxRow(
-                title = "Kimlik Koruması",
-                subtitle = "Whois bilgilerinizi gizleyin",
-                price = uiState.idProtectFee,
-                checked = item.idProtectEnabled,
-                onCheckedChange = onToggleIdProtect,
-                icon = Icons.Default.Shield,
-                isDarkTheme = isDarkTheme
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            HorizontalDivider(color = colors.Outline.copy(alpha = 0.3f))
-
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+            HorizontalDivider(color = colors.Outline.copy(alpha = 0.1f))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Item Total
             Row(
@@ -489,8 +573,8 @@ private fun CartItemCard(
                 )
                 Text(
                     text = "€${priceFormat.format(itemTotal)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
                     color = colors.Primary
                 )
             }
@@ -499,92 +583,92 @@ private fun CartItemCard(
 }
 
 // ============================================
-// ADDON CHECKBOX ROW
+// ADDON CHIP (MODERN COMPACT)
 // ============================================
 @Composable
-private fun AddonCheckboxRow(
+private fun AddonChip(
     title: String,
-    subtitle: String,
     price: String,
     checked: Boolean,
-    onCheckedChange: () -> Unit,
+    onToggle: () -> Unit,
     icon: ImageVector,
     isDarkTheme: Boolean
 ) {
     val colors = if (isDarkTheme) DarkColors else LightColors
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+    val backgroundColor by animateColorAsState(
+        if (checked) colors.Primary.copy(alpha = 0.1f) else colors.Surface
+    )
+    val borderColor by animateColorAsState(
+        if (checked) colors.Primary else colors.Outline.copy(alpha = 0.2f)
+    )
+    
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = backgroundColor,
+        border = BorderStroke(1.dp, borderColor),
+        modifier = Modifier.clickable { onToggle() }
     ) {
-        Checkbox(
-            checked = checked,
-            onCheckedChange = { onCheckedChange() },
-            colors = CheckboxDefaults.colors(
-                checkedColor = colors.Primary,
-                uncheckedColor = colors.Outline
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (checked) Icons.Default.CheckCircle else icon,
+                contentDescription = null,
+                tint = if (checked) colors.Primary else colors.TextTertiary,
+                modifier = Modifier.size(18.dp)
             )
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = if (checked) colors.Primary else colors.TextTertiary,
-            modifier = Modifier.size(20.dp)
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = colors.TextPrimary
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.TextTertiary
-            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (checked) colors.Primary else colors.TextPrimary
+                )
+                Text(
+                    text = "+€$price",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (checked) colors.Primary.copy(alpha = 0.8f) else colors.TextTertiary
+                )
+            }
         }
-
-        Text(
-            text = "+€$price",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
-            color = if (checked) colors.Primary else colors.TextTertiary
-        )
     }
 }
 
+
+
 // ============================================
-// CART SUMMARY BAR
+// CART SUMMARY BAR (FLOATING)
 // ============================================
 @Composable
 private fun CartSummaryBar(
     uiState: CartUiState,
     onCheckoutClick: () -> Unit,
-    isDarkTheme: Boolean
+    isDarkTheme: Boolean,
+    modifier: Modifier = Modifier
 ) {
     val colors = if (isDarkTheme) DarkColors else LightColors
     val priceFormat = remember { DecimalFormat("#,##0.00") }
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = colors.CardBackground,
-        shadowElevation = 16.dp,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .shadow(
+                elevation = 24.dp,
+                shape = RoundedCornerShape(24.dp),
+                spotColor = Color.Black.copy(alpha = 0.2f),
+                ambientColor = Color.Black.copy(alpha = 0.1f)
+            ),
+        color = colors.Surface.copy(alpha = 0.95f), // High opacity for readability
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, colors.Outline.copy(alpha = 0.1f))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp)
-                .navigationBarsPadding()
         ) {
             // Price breakdown
             Row(
@@ -623,63 +707,57 @@ private fun CartSummaryBar(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            HorizontalDivider(color = colors.Outline.copy(alpha = 0.3f))
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Grand Total
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Grand Total and Checkout Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Toplam",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = colors.TextSecondary
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colors.TextTertiary
+                    )
+                    Text(
+                        text = "€${priceFormat.format(uiState.grandTotal)}",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.Primary
                     )
                     Text(
                         text = "${uiState.itemCount} ürün",
                         style = MaterialTheme.typography.bodySmall,
-                        color = colors.TextTertiary
+                        color = colors.TextSecondary
                     )
                 }
 
-                Text(
-                    text = "€${priceFormat.format(uiState.grandTotal)}",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.Primary
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Checkout Button
-            Button(
-                onClick = onCheckoutClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = MaterialTheme.shapes.large,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colors.Primary,
-                    contentColor = Color.White
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Payment,
-                    contentDescription = null
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Ödemeye Geç",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Button(
+                    onClick = onCheckoutClick,
+                    modifier = Modifier
+                        .weight(1.5f)
+                        .height(56.dp)
+                        .scaleClick(onClick = onCheckoutClick),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colors.Primary,
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Payment,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Ödemeye Geç",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }

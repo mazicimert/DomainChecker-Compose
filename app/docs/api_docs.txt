@@ -1,0 +1,352 @@
+https://devik.eurovdc.eu/tr/api/conf/kdv
+
+{
+    "code": 1,
+    "status": "success",
+    "message": {
+        "taxRate": ""
+    }
+}
+
+
+
+
+https://devik.eurovdc.eu/tr/api/addon_fee
+
+{
+    "code": 1,
+    "status": "success",
+    "message": {
+        "currency_id": 1,
+        "dns_management": "1.11",
+        "email_forwarding": "1.12",
+        "id_protection": "1.13"
+    }
+}
+
+
+
+
+https://devik.eurovdc.eu/tr/api/payment_methods
+
+{
+    "code": 1,
+    "status": "success",
+    "message": [
+        {
+            "module": "banktransfer",
+            "displayname": "Bank Transfer"
+        },
+        {
+            "module": "stripe",
+            "displayname": "Stripe"
+        }
+    ]
+}
+
+
+
+
+
+https://devik.eurovdc.eu/tr/api/bank_transfer_info
+
+{
+    "code": 1,
+    "status": "success",
+    "message": "Bank / Банка: Ziraat Bank Bulgaria\nAccount Name / Име на сметката: EUROVDC LTD\nIBAN: BG23TCZB93501403442000\nSWIFT / BIC: TCZBBGSF\n\nЕИК / UIC: 208006418\nVAT No: BG208006418\nTax Identification Number: BG208006418"
+}
+
+
+
+
+https://devik.eurovdc.eu/tr/api/complete_order
+
+JSON Body
+
+{
+    "payment_method": "banktransfer",
+    "selected_card": "new",
+    "card_name": "",
+    "card_number": "",
+    "card_cv2": "",
+    "card_exp": "",
+    "save_card": false,
+    "promocode": "",
+    "subtotal": 39.47,
+    "discount": 0,
+    "credit": 0,
+    "taxRate": 0,
+    "taxes": 0,
+    "total": 39.47,
+    "totalMonthly": 3.49,
+    "totalQuarterly": 0,
+    "totalSemiannually": 0,
+    "totalAnnually": 35.98,
+    "totalBiennially": 0,
+    "totalTriennially": 0,
+    "setupFees": 0,
+    "basket": [
+        {
+            "productId": 1,
+            "name": "Mini Web Hosting",
+            "domain": "kadirkurt.co",
+            "domaintype": "register",
+            "type": "hostingaccount",
+            "billingcycle": "monthly",
+            "prefix": "€",
+            "suffix": "",
+            "configoptions": [],
+            "configtotal": 0,
+            "subtotal": 3.49,
+            "total": 3.49,
+            "has_tax": true
+        },
+        {
+            "type": "domain",
+            "domaintype": "register",
+            "domain": "kadirkurt.co",
+            "name": "kadirkurt.co",
+            "billingcycle": "annually",
+            "price": {
+                "categories": [
+                    "Other"
+                ],
+                "addons": {
+                    "dns": true,
+                    "email": true,
+                    "idprotect": true
+                },
+                "group": "",
+                "register": {
+                    "1": "26.99",
+                    "2": "52.99",
+                    "3": "78.99",
+                    "4": "104.99",
+                    "5": "129.99",
+                    "6": "155.99",
+                    "7": "181.99",
+                    "8": "207.99",
+                    "9": "232.99",
+                    "10": "258.99"
+                },
+                "transfer": {
+                    "1": "26.99",
+                    "2": "52.99",
+                    "3": "78.99",
+                    "4": "104.99",
+                    "5": "129.99",
+                    "6": "155.99",
+                    "7": "181.99",
+                    "8": "207.99",
+                    "9": "232.99",
+                    "10": "258.99"
+                },
+                "renew": {
+                    "1": "26.99",
+                    "2": "52.99",
+                    "3": "78.99",
+                    "4": "104.99",
+                    "5": "129.99",
+                    "6": "155.99",
+                    "7": "181.99",
+                    "8": "207.99",
+                    "9": "232.99",
+                    "10": "258.99"
+                },
+                "grace_period": {
+                    "days": 0,
+                    "price": "€26.99"
+                },
+                "grace_period_days": 0,
+                "grace_period_fee": "€26.99",
+                "redemption_period": {
+                    "days": 0,
+                    "price": "€0.00"
+                },
+                "redemption_period_days": 0,
+                "redemption_period_fee": "€0.00"
+            },
+            "status": "available",
+            "hProductId": "1",
+            "hProductName": "Mini Web Hosting",
+            "period": 1,
+            "nameserver1": "ns1.eurovdc.eu",
+            "nameserver2": "ns2.eurovdc.eu",
+            "nameserver3": "",
+            "nameserver4": "",
+            "nameserver5": "",
+            "idprotection": false,
+            "dns_management": false,
+            "email_forwarding": false,
+            "has_tax": true,
+            "additional_fields": [],
+            "total": "26.99",
+            "eppcode": "",
+            "idnLanguage": false,
+            "idnLanguageName": "kadirkurt"
+        },
+        {
+            "type": "domain",
+            "domaintype": "register",
+            "domain": "kadirkurtum.com",
+            "name": "kadirkurtum.com",
+            "billingcycle": "annually",
+            "price": {
+                "categories": [
+                    "Popular"
+                ],
+                "addons": {
+                    "dns": true,
+                    "email": true,
+                    "idprotect": true
+                },
+                "group": "sale",
+                "register": {
+                    "1": "8.99",
+                    "2": "19.99",
+                    "3": "28.99",
+                    "4": "37.99",
+                    "5": "46.99",
+                    "6": "55.99",
+                    "7": "64.99",
+                    "8": "73.99",
+                    "9": "82.99",
+                    "10": "91.99"
+                },
+                "transfer": {
+                    "1": "9.99",
+                    "2": "19.99",
+                    "3": "28.99",
+                    "4": "38.99",
+                    "5": "47.99",
+                    "6": "56.99",
+                    "7": "65.99",
+                    "8": "75.99",
+                    "9": "84.99",
+                    "10": "93.99"
+                },
+                "renew": {
+                    "1": "10.99",
+                    "2": "19.99",
+                    "3": "28.99",
+                    "4": "38.99",
+                    "5": "47.99",
+                    "6": "56.99",
+                    "7": "65.99",
+                    "8": "75.99",
+                    "9": "84.99",
+                    "10": "93.99"
+                },
+                "grace_period": {
+                    "days": 0,
+                    "price": "€10.99"
+                },
+                "grace_period_days": 0,
+                "grace_period_fee": "€10.99",
+                "redemption_period": {
+                    "days": 0,
+                    "price": "€121.99"
+                },
+                "redemption_period_days": 0,
+                "redemption_period_fee": "€121.99"
+            },
+            "status": "available",
+            "hProductId": null,
+            "hProductName": null,
+            "period": 1,
+            "nameserver1": "ns1.eurovdc.eu",
+            "nameserver2": "ns2.eurovdc.eu",
+            "nameserver3": "",
+            "nameserver4": "",
+            "nameserver5": "",
+            "idprotection": false,
+            "dns_management": false,
+            "email_forwarding": false,
+            "has_tax": true,
+            "additional_fields": [],
+            "total": "8.99",
+            "eppcode": "",
+            "idnLanguage": false,
+            "idnLanguageName": "kadirkurtum"
+        }
+    ],
+    "approved_contracts": [
+        4,
+        8
+    ],
+    "userid": "6"
+}
+
+
+Response
+
+{
+    "code": 1,
+    "status": "success",
+    "message": {
+        "invoiceid": 343,
+        "orderid": 288,
+        "response": "ok"
+    }
+}
+
+
+
+
+https://devik.eurovdc.eu/tr/api/getInvoice/343
+
+{
+    "code": 1,
+    "status": "success",
+    "message": {
+        "result": "success",
+        "invoiceid": 343,
+        "invoicenum": "",
+        "userid": 36,
+        "date": "2026-01-31",
+        "duedate": "2026-01-31",
+        "datepaid": "0000-00-00 00:00:00",
+        "lastcaptureattempt": "0000-00-00 00:00:00",
+        "subtotal": "39.47",
+        "credit": "0.00",
+        "tax": "0.00",
+        "tax2": "0.00",
+        "total": "39.47",
+        "balance": "39.47",
+        "taxrate": "0.000",
+        "taxrate2": "0.000",
+        "status": "Unpaid",
+        "paymentmethod": "banktransfer",
+        "notes": "",
+        "ccgateway": false,
+        "items": {
+            "item": [
+                {
+                    "id": 437,
+                    "type": "Hosting",
+                    "relid": 236,
+                    "description": "Mini Web Hosting - kadirkurt.co (31/01/2026 - 02/03/2026)",
+                    "amount": "3.49",
+                    "taxed": 0
+                },
+                {
+                    "id": 438,
+                    "type": "DomainRegister",
+                    "relid": 137,
+                    "description": "Alan Adı Kaydı - kadirkurt.co - 1 Yıl (31/01/2026 - 30/01/2027)",
+                    "amount": "26.99",
+                    "taxed": 0
+                },
+                {
+                    "id": 439,
+                    "type": "DomainRegister",
+                    "relid": 138,
+                    "description": "Alan Adı Kaydı - kadirkurtum.com - 1 Yıl (31/01/2026 - 30/01/2027)",
+                    "amount": "8.99",
+                    "taxed": 0
+                }
+            ]
+        },
+        "transactions": ""
+    }
+}

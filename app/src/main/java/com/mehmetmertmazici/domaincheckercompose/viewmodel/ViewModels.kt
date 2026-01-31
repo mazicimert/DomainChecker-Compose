@@ -241,6 +241,8 @@ sealed interface PricesEffect {
 data class DomainPricesUiState(
     val domains: List<Domain> = emptyList(),
     val originalDomains: List<Domain> = emptyList(),
+    val searchQuery: String = "",
+    val activeCategory: String = "all",
     val isLoading: Boolean = false,
     val showEmptyState: Boolean = false,
     val error: String? = null
@@ -315,11 +317,24 @@ class DomainPricesViewModel : ViewModel() {
         }
     }
 
-    fun filterByCategory(category: String) {
-        val originalDomains = _uiState.value.originalDomains
+    fun updateSearchQuery(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+        applyFilters()
+    }
 
-        // Filtreleme işlemi
-        val filteredDomains = if (category == "all") {
+    fun filterByCategory(category: String) {
+        _uiState.update { it.copy(activeCategory = category) }
+        applyFilters()
+    }
+
+    private fun applyFilters() {
+        val currentState = _uiState.value
+        val originalDomains = currentState.originalDomains
+        val query = currentState.searchQuery.trim().lowercase()
+        val category = currentState.activeCategory
+
+        // 1. Filter by Category
+        val categoryFiltered = if (category == "all") {
             originalDomains
         } else {
             originalDomains.filter { domainItem ->
@@ -334,7 +349,21 @@ class DomainPricesViewModel : ViewModel() {
             }
         }
 
-        _uiState.update { it.copy(domains = filteredDomains) }
+        // 2. Filter by Search Query
+        val finalFiltered = if (query.isEmpty()) {
+            categoryFiltered
+        } else {
+            categoryFiltered.filter { domain ->
+                domain.domain.lowercase().contains(query)
+            }
+        }
+
+        _uiState.update { 
+            it.copy(
+                domains = finalFiltered,
+                showEmptyState = finalFiltered.isEmpty() && !currentState.isLoading
+            ) 
+        }
     }
 
     private fun getExtensionFromDomain(domainName: String): String {

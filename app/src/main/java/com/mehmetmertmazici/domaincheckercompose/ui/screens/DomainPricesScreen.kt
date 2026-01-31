@@ -1,22 +1,33 @@
 package com.mehmetmertmazici.domaincheckercompose.ui.screens
 
+import com.mehmetmertmazici.domaincheckercompose.ui.components.AnimatedListItem
+import com.mehmetmertmazici.domaincheckercompose.ui.components.GradientBackground
+import com.mehmetmertmazici.domaincheckercompose.ui.components.IconSurface
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.zIndex
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Domain
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -57,24 +68,13 @@ fun DomainPricesScreen(
         }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        colors.GradientStart,
-                        colors.GradientCenter,
-                        colors.GradientEnd
-                    )
-                )
-            )
-    ) {
+    GradientBackground {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding() // İçeriği status bar'ın altına iter
         ) {
+            // Glassy Top Bar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = Color.Transparent
@@ -82,44 +82,61 @@ fun DomainPricesScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
+                        .height(64.dp) // Slightly taller for premium feel
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 8.dp),
+                            .padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        IconButton(onClick = onBackClick) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color.White
-                            )
+                        Surface(
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            color = colors.Primary.copy(alpha = 0.1f),
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            IconButton(onClick = onBackClick) {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = colors.Primary
+                                )
+                            }
                         }
 
                         Text(
                             text = "Domain Fiyatları",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 16.dp)
+                            color = colors.TextPrimary,
+                            modifier = Modifier.padding(horizontal = 16.dp)
                         )
 
                         // Filtre Butonu
-                        IconButton(onClick = { showFilterSheet = true }) {
-                            Icon(
-                                imageVector = Icons.Filled.FilterList,
-                                contentDescription = "Filter",
-                                tint = Color.White
-                            )
+                        Surface(
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            color = colors.Primary.copy(alpha = 0.1f),
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            IconButton(onClick = { showFilterSheet = true }) {
+                                Icon(
+                                    imageVector = Icons.Filled.FilterList,
+                                    contentDescription = "Filter",
+                                    tint = colors.Primary
+                                )
+                            }
                         }
                     }
                 }
             }
+
+            // Search Bar (Sticky/Fixed below TopBar)
+            PricesSearchBar(
+                query = uiState.searchQuery,
+                onQueryChange = viewModel::updateSearchQuery,
+                isDarkTheme = isDarkTheme
+            )
 
             // Content Area
             Box(
@@ -134,7 +151,9 @@ fun DomainPricesScreen(
                 ) {
                     // Info Card
                     item {
-                        InfoCard(isDarkTheme = isDarkTheme)
+                        AnimatedListItem {
+                            InfoCard(isDarkTheme = isDarkTheme)
+                        }
                     }
 
                     // Price Items
@@ -143,11 +162,15 @@ fun DomainPricesScreen(
                             items = uiState.domains,
                             key = { it.domain }
                         ) { domain ->
-                            DomainPriceItemCard(
-                                domain = domain,
-                                getTLD = viewModel::getTLD,
-                                isDarkTheme = isDarkTheme
-                            )
+                            val index = uiState.domains.indexOf(domain)
+                            
+                            AnimatedListItem(delayMillis = 50 + (index * 30)) {
+                                DomainPriceItemCard(
+                                    domain = domain,
+                                    getTLD = viewModel::getTLD,
+                                    isDarkTheme = isDarkTheme
+                                )
+                            }
                         }
                     }
                 }
@@ -160,11 +183,15 @@ fun DomainPricesScreen(
                     )
                 }
 
-                // Empty State
+                // Empty State (Search or Load Error)
                 if (uiState.showEmptyState) {
+                    val searchString = uiState.searchQuery
+                    val isSearchEmpty = searchString.isNotEmpty()
                     EmptyState(
                         modifier = Modifier.align(Alignment.Center),
-                        isDarkTheme = isDarkTheme
+                        isDarkTheme = isDarkTheme,
+                        title = if (isSearchEmpty) "Uzantı Bulunamadı" else "Fiyat Bilgisi Yüklenemedi",
+                        message = if (isSearchEmpty) "'$searchString' ile eşleşen bir sonuç bulunamadı.\nFarklı bir arama yapmayı deneyin." else "Fiyat bilgileri şu anda yüklenemiyor.\nLütfen daha sonra tekrar deneyin."
                     )
                 }
             }
@@ -173,6 +200,7 @@ fun DomainPricesScreen(
         // Filter Bottom Sheet
         if (showFilterSheet) {
             FilterBottomSheet(
+                selectedCategory = uiState.activeCategory,
                 onFilterSelected = { categoryId ->
                     viewModel.filterByCategory(categoryId)
                     showFilterSheet = false
@@ -273,7 +301,9 @@ private fun LoadingState(
 @Composable
 private fun EmptyState(
     modifier: Modifier = Modifier,
-    isDarkTheme: Boolean
+    isDarkTheme: Boolean,
+    title: String = "Fiyat Bilgisi Yüklenemedi",
+    message: String = "Fiyat bilgileri şu anda yüklenemiyor.\nLütfen daha sonra tekrar deneyin."
 ) {
     val colors = if (isDarkTheme) DarkColors else LightColors
 
@@ -282,25 +312,26 @@ private fun EmptyState(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
-            imageVector = Icons.Filled.AttachMoney,
+            imageVector = Icons.Filled.Search, // Changed to generic search/info icon contextually? Keep generic or swap
             contentDescription = null,
             tint = colors.TextTertiary,
-            modifier = Modifier.size(120.dp)
+            modifier = Modifier.size(100.dp)
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Fiyat Bilgisi Yüklenemedi",
+            text = title,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = colors.TextSecondary
+            color = colors.TextSecondary,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Fiyat bilgileri şu anda yüklenemiyor.\nLütfen daha sonra tekrar deneyin.",
+            text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = colors.TextTertiary,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -308,9 +339,74 @@ private fun EmptyState(
     }
 }
 
+@Composable
+fun PricesSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    isDarkTheme: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val colors = if (isDarkTheme) DarkColors else LightColors
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .zIndex(1f),
+        color = Color.Transparent
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = {
+                    Text(
+                        text = "Uzantı ara... (örn: .com)",
+                        color = colors.TextTertiary
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = colors.Primary
+                    )
+                },
+                trailingIcon = if (query.isNotEmpty()) {
+                    {
+                        IconButton(onClick = { onQueryChange("") }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Clear",
+                                tint = colors.TextSecondary
+                            )
+                        }
+                    }
+                } else null,
+                shape = RoundedCornerShape(24.dp), // Extra Large rounded for modern feel
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colors.Primary,
+                    unfocusedBorderColor = colors.Outline.copy(alpha = 0.3f),
+                    focusedContainerColor = colors.Surface,
+                    unfocusedContainerColor = colors.Surface,
+                    cursorColor = colors.Primary,
+                    focusedTextColor = colors.TextPrimary,
+                    unfocusedTextColor = colors.TextPrimary
+                ),
+                singleLine = true
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterBottomSheet(
+    selectedCategory: String,
     onFilterSelected: (String) -> Unit,
     onDismiss: () -> Unit,
     isDarkTheme: Boolean = false
@@ -352,6 +448,7 @@ fun FilterBottomSheet(
             filterOptions.forEach { option ->
                 FilterOptionCard(
                     option = option,
+                    isSelected = option.id == selectedCategory,
                     onClick = {
                         onFilterSelected(option.id)
                         onDismiss()
@@ -377,32 +474,45 @@ private data class FilterOption(
 @Composable
 private fun FilterOptionCard(
     option: FilterOption,
+    isSelected: Boolean,
     onClick: () -> Unit,
     isDarkTheme: Boolean
 ) {
     val colors = if (isDarkTheme) DarkColors else LightColors
+
+    // Visual selection states
+    val borderColor = if (isSelected) colors.Primary else Color.Transparent
+    val backgroundColor = if (isSelected) colors.Primary.copy(alpha = 0.05f) else colors.SurfaceVariant
+    val iconBgColor = if (isSelected) colors.Primary else colors.Primary.copy(alpha = 0.1f)
+    val iconTintColor = if (isSelected) Color.White else option.iconTint
 
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = colors.SurfaceVariant
+            containerColor = backgroundColor
         ),
-        border = CardDefaults.outlinedCardBorder()
+        border = BorderStroke(1.dp, borderColor)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = option.icon,
-                contentDescription = null,
-                tint = option.iconTint,
-                modifier = Modifier.size(24.dp)
-            )
+            IconSurface(
+                modifier = Modifier.size(44.dp),
+                backgroundColor = iconBgColor,
+                iconColor = iconTintColor
+            ) {
+                Icon(
+                    imageVector = option.icon,
+                    contentDescription = null,
+                    tint = iconTintColor, // Enforce tint here as IconSurface expects content
+                    modifier = Modifier.size(24.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.width(16.dp))
 
@@ -411,13 +521,29 @@ private fun FilterOptionCard(
                     text = option.title,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = colors.TextPrimary
+                    color = if (isSelected) colors.Primary else colors.TextPrimary
                 )
 
                 Text(
                     text = option.description,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = colors.TextSecondary
+                )
+            }
+
+            if (isSelected) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Selected",
+                    tint = colors.Primary,
+                    modifier = Modifier.size(24.dp)
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = colors.TextTertiary.copy(alpha = 0.5f),
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
