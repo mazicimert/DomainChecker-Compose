@@ -291,6 +291,12 @@ data class CompleteOrderRequest(
     @SerializedName("payment_method")
     val paymentMethod: String,
 
+    @SerializedName("selected_card")
+    val selectedCard: String = "new",
+
+    @SerializedName("card_name")
+    val cardName: String? = null,
+
     @SerializedName("card_number")
     val cardNumber: String? = null,
 
@@ -300,11 +306,59 @@ data class CompleteOrderRequest(
     @SerializedName("card_exp")
     val cardExp: String? = null,
 
+    @SerializedName("save_card")
+    val saveCard: Boolean = false,
+
     @SerializedName("promocode")
     val promoCode: String? = null,
 
+    @SerializedName("subtotal")
+    val subtotal: Double,
+
+    @SerializedName("discount")
+    val discount: Double = 0.0,
+
+    @SerializedName("credit")
+    val credit: Double = 0.0,
+
+    @SerializedName("taxRate")
+    val taxRate: Double = 0.0,
+
+    @SerializedName("taxes")
+    val taxes: Double = 0.0,
+
+    @SerializedName("total")
+    val total: Double,
+
+    @SerializedName("totalMonthly")
+    val totalMonthly: Double = 0.0,
+
+    @SerializedName("totalQuarterly")
+    val totalQuarterly: Double = 0.0,
+
+    @SerializedName("totalSemiannually")
+    val totalSemiannually: Double = 0.0,
+
+    @SerializedName("totalAnnually")
+    val totalAnnually: Double = 0.0,
+
+    @SerializedName("totalBiennially")
+    val totalBiennially: Double = 0.0,
+
+    @SerializedName("totalTriennially")
+    val totalTriennially: Double = 0.0,
+
+    @SerializedName("setupFees")
+    val setupFees: Double = 0.0,
+
     @SerializedName("basket")
-    val basket: List<BasketItem>
+    val basket: List<BasketItem>,
+
+    @SerializedName("approved_contracts")
+    val approvedContracts: List<Int> = listOf(4, 8),
+
+    @SerializedName("userid")
+    val userId: String? = null
 )
 
 data class CompleteOrderResponse(
@@ -315,23 +369,28 @@ data class CompleteOrderResponse(
     val status: String,
 
     @SerializedName("message")
-    val message: String?,
-
-    @SerializedName("order_id")
-    val orderId: Int?,
-
-    @SerializedName("invoice_id")
-    val invoiceId: Int?,
-
-    @SerializedName("redirect_url")
-    val redirectUrl: String?,
-
-    @SerializedName("total")
-    val total: String?
+    val message: CompleteOrderMessage?
 ) {
     val isSuccess: Boolean
         get() = code == 1 && status == "success"
+
+    val invoiceId: Int?
+        get() = message?.invoiceId
+
+    val orderId: Int?
+        get() = message?.orderId
 }
+
+data class CompleteOrderMessage(
+    @SerializedName("invoiceid")
+    val invoiceId: Int?,
+
+    @SerializedName("orderid")
+    val orderId: Int?,
+
+    @SerializedName("response")
+    val response: String?
+)
 
 // ============================================
 // PROMO CODE

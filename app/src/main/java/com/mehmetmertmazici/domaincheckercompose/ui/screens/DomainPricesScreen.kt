@@ -164,7 +164,7 @@ fun DomainPricesScreen(
                         ) { domain ->
                             val index = uiState.domains.indexOf(domain)
                             
-                            AnimatedListItem(delayMillis = 50 + (index * 30)) {
+                            AnimatedListItem(delayMillis = minOf(index * 20, 200)) {
                                 DomainPriceItemCard(
                                     domain = domain,
                                     getTLD = viewModel::getTLD,

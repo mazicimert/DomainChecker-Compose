@@ -152,7 +152,8 @@ fun CartScreen(
                     itemCount = uiState.itemCount,
                     onBackClick = onBackClick,
                     onClearCart = { showClearCartDialog = true },
-                    showClearButton = !uiState.isEmpty
+                    showClearButton = !uiState.isEmpty,
+                    isDarkTheme = isDarkTheme
                 )
 
                 // Scrollable Content
@@ -210,8 +211,11 @@ private fun CartTopBar(
     itemCount: Int,
     onBackClick: () -> Unit,
     onClearCart: () -> Unit,
-    showClearButton: Boolean
+    showClearButton: Boolean,
+    isDarkTheme: Boolean
 ) {
+    val colors = if (isDarkTheme) DarkColors else LightColors
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -222,7 +226,7 @@ private fun CartTopBar(
         // Back Button with Glass effect
         Surface(
             shape = RoundedCornerShape(12.dp),
-            color = Color.White.copy(alpha = 0.1f),
+            color = colors.SurfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier.size(44.dp),
             onClick = onBackClick
         ) {
@@ -230,7 +234,7 @@ private fun CartTopBar(
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Geri",
-                    tint = Color.White
+                    tint = colors.TextPrimary
                 )
             }
         }
@@ -240,14 +244,14 @@ private fun CartTopBar(
             text = "Alışveriş Sepeti (${itemCount})",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = colors.TextPrimary
         )
 
         // Clear Action
         if (showClearButton) {
             TextButton(
                 onClick = onClearCart,
-                colors = ButtonDefaults.textButtonColors(contentColor = Color.White.copy(alpha = 0.8f))
+                colors = ButtonDefaults.textButtonColors(contentColor = colors.TextSecondary)
             ) {
                 Icon(
                     imageVector = Icons.Default.DeleteSweep,
@@ -451,13 +455,23 @@ private fun CartItemCard(
             )
             
             // Horizontal scrollable years for modern selection
+            val availableYears = remember(item.price?.register) {
+                item.price?.register?.entries?.mapNotNull { (year, price) ->
+                    if (price != "0.00" && price.isNotBlank() && price != "null") {
+                        year.toIntOrNull()
+                    } else {
+                        null
+                    }
+                }?.sorted()?.takeIf { it.isNotEmpty() } ?: listOf(1)
+            }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                (1..10).forEach { year -> // Showing 1-5 years for cleaner UI, could expand
+                availableYears.forEach { year -> // Showing available years dynamically
                     val isSelected = item.period == year
                     val containerColor by animateColorAsState(
                         if (isSelected) colors.Primary else colors.SurfaceVariant.copy(alpha = 0.5f)
@@ -483,26 +497,6 @@ private fun CartItemCard(
                                 style = MaterialTheme.typography.labelLarge,
                                 color = contentColor,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-                
-                // "+ More" indicator if needed, or just let scroll
-                if (item.period > 5) {
-                     Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = colors.Primary,
-                        modifier = Modifier.height(36.dp)
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                             modifier = Modifier.padding(horizontal = 16.dp)
-                        ) {
-                            Text(
-                                text = "${item.period} Yıl",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = Color.White
                             )
                         }
                     }
@@ -781,7 +775,7 @@ private fun EmptyCartView(
         Icon(
             imageVector = Icons.Filled.ShoppingCart,
             contentDescription = null,
-            tint = Color.White.copy(alpha = 0.5f),
+            tint = colors.TextTertiary,
             modifier = Modifier.size(120.dp)
         )
 
@@ -791,7 +785,7 @@ private fun EmptyCartView(
             text = "Sepetiniz Boş",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = colors.TextPrimary
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -799,7 +793,7 @@ private fun EmptyCartView(
         Text(
             text = "Domain arayın ve beğendiklerinizi\nsepete ekleyin.",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.7f),
+            color = colors.TextSecondary,
             textAlign = TextAlign.Center
         )
 
@@ -808,10 +802,10 @@ private fun EmptyCartView(
         OutlinedButton(
             onClick = onSearchClick,
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Color.White
+                contentColor = colors.TextPrimary
             ),
             border = ButtonDefaults.outlinedButtonBorder.copy(
-                brush = Brush.linearGradient(listOf(Color.White, Color.White))
+                brush = Brush.linearGradient(listOf(colors.Primary, colors.Primary))
             )
         ) {
             Icon(

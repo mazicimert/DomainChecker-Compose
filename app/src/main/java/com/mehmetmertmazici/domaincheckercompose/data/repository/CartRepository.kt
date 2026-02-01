@@ -14,6 +14,7 @@ import com.mehmetmertmazici.domaincheckercompose.model.BankTransferInfoResponse
 import com.mehmetmertmazici.domaincheckercompose.model.CartItem
 import com.mehmetmertmazici.domaincheckercompose.model.CompleteOrderRequest
 import com.mehmetmertmazici.domaincheckercompose.model.CompleteOrderResponse
+import com.mehmetmertmazici.domaincheckercompose.model.KdvConfigResponse
 import com.mehmetmertmazici.domaincheckercompose.model.PaymentMethodsResponse
 import com.mehmetmertmazici.domaincheckercompose.network.ApiClient
 import kotlinx.coroutines.CoroutineScope
@@ -178,6 +179,31 @@ class CartRepository(private val context: Context) {
     }
 
     // ============================================
+    // KDV (TAX) CONFIG
+    // ============================================
+
+    private var cachedKdvConfig: KdvConfigResponse? = null
+
+    suspend fun getKdvConfig(): Result<KdvConfigResponse> {
+        cachedKdvConfig?.let { return Result.success(it) }
+
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.getKdvConfig()
+
+                if (response.isSuccess) {
+                    cachedKdvConfig = response
+                    Result.success(response)
+                } else {
+                    Result.failure(Exception("KDV bilgisi alınamadı"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    // ============================================
     // PAYMENT METHODS
     // ============================================
 
@@ -223,10 +249,17 @@ class CartRepository(private val context: Context) {
 
     suspend fun completeOrder(
         paymentMethod: String,
+        cardName: String? = null,
         cardNumber: String? = null,
         cardCv2: String? = null,
         cardExp: String? = null,
-        promoCode: String? = null
+        saveCard: Boolean = false,
+        promoCode: String? = null,
+        subtotal: Double,
+        taxRate: Double,
+        taxes: Double,
+        total: Double,
+        userId: String? = null
     ): Result<CompleteOrderResponse> {
         return withContext(Dispatchers.IO) {
             try {
@@ -236,13 +269,26 @@ class CartRepository(private val context: Context) {
                     return@withContext Result.failure(Exception("Sepet boş"))
                 }
 
+                // Calculate totals by billing cycle
+                val totalAnnually = _cartItems.value
+                    .filter { it.domainType == "register" || it.domainType == "transfer" }
+                    .sumOf { it.getBasePrice() }
+
                 val request = CompleteOrderRequest(
                     paymentMethod = paymentMethod,
+                    cardName = cardName,
                     cardNumber = cardNumber,
                     cardCv2 = cardCv2,
                     cardExp = cardExp,
+                    saveCard = saveCard,
                     promoCode = promoCode,
-                    basket = basketItems
+                    subtotal = subtotal,
+                    taxRate = taxRate,
+                    taxes = taxes,
+                    total = total,
+                    totalAnnually = totalAnnually,
+                    basket = basketItems,
+                    userId = userId
                 )
 
                 val response = apiService.completeOrder(request)
@@ -252,7 +298,7 @@ class CartRepository(private val context: Context) {
                     clearCart()
                     Result.success(response)
                 } else {
-                    Result.failure(Exception(response.message ?: "Sipariş tamamlanamadı"))
+                    Result.failure(Exception("Sipariş tamamlanamadı"))
                 }
             } catch (e: Exception) {
                 Result.failure(e)

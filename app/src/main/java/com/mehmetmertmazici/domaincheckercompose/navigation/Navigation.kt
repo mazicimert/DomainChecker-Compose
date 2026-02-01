@@ -15,23 +15,18 @@ import com.mehmetmertmazici.domaincheckercompose.ui.screens.auth.ForgotPasswordS
 import com.mehmetmertmazici.domaincheckercompose.ui.screens.auth.LoginScreen
 import com.mehmetmertmazici.domaincheckercompose.ui.screens.auth.RegisterScreen
 import com.mehmetmertmazici.domaincheckercompose.ui.screens.auth.MailVerificationScreen
+import com.mehmetmertmazici.domaincheckercompose.ui.screens.checkout.CheckoutScreen
+import com.mehmetmertmazici.domaincheckercompose.ui.screens.checkout.OrderSuccessScreen
 import com.mehmetmertmazici.domaincheckercompose.viewmodel.AuthViewModel
 import com.mehmetmertmazici.domaincheckercompose.viewmodel.CartViewModel
+import com.mehmetmertmazici.domaincheckercompose.viewmodel.CheckoutViewModel
 import com.mehmetmertmazici.domaincheckercompose.viewmodel.DomainPricesViewModel
 import com.mehmetmertmazici.domaincheckercompose.viewmodel.DomainSearchViewModel
 import kotlinx.coroutines.launch
-
-// Extension imports for the placeholder
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Payment
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.statusBarsPadding
 
 // Screen Routes
 sealed class Screen(val route: String) {
@@ -48,6 +43,9 @@ sealed class Screen(val route: String) {
     object Cart : Screen("cart")
     object Profile : Screen("profile")
     object Checkout : Screen("checkout")
+    object OrderSuccess : Screen("order_success/{invoiceId}/{status}") {
+        fun createRoute(invoiceId: Int, status: String) = "order_success/$invoiceId/$status"
+    }
 }
 
 @Composable
@@ -73,6 +71,7 @@ fun DomainCheckerApp(
     // ViewModels
     val authViewModel = remember { AuthViewModel() }
     val cartViewModel = remember { CartViewModel() }
+    val checkoutViewModel = remember { CheckoutViewModel() }
 
     // Navigasyon değişimlerini dinle
     DisposableEffect(navController) {
@@ -328,99 +327,52 @@ fun DomainCheckerApp(
             }
 
             // ============================================
-            // CHECKOUT SCREEN (Placeholder - Adım 4'te yapılacak)
+            // CHECKOUT SCREEN
             // ============================================
 
             composable(Screen.Checkout.route) {
-                // TODO: Adım 4'te gerçek Checkout ekranı eklenecek
-                CheckoutPlaceholderScreen(
+                CheckoutScreen(
+                    viewModel = checkoutViewModel,
                     onBackClick = { navController.navigateUp() },
+                    onNavigateToSuccess = { invoiceId, status ->
+                        navController.navigate(Screen.OrderSuccess.createRoute(invoiceId, status)) {
+                            popUpTo(Screen.Cart.route) { inclusive = true }
+                        }
+                    },
                     isDarkTheme = isDarkTheme
                 )
             }
-        }
-    }
-}
 
-// Placeholder Checkout Screen (Adım 4'te değiştirilecek)
-@Composable
-private fun CheckoutPlaceholderScreen(
-    onBackClick: () -> Unit,
-    isDarkTheme: Boolean
-) {
-    com.mehmetmertmazici.domaincheckercompose.ui.components.GradientBackground {
-        androidx.compose.foundation.layout.Column(
-            modifier = androidx.compose.ui.Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-        ) {
-            // Top Bar
-            androidx.compose.material3.Surface(
-                modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
-                color = androidx.compose.ui.graphics.Color.Transparent
-            ) {
-                androidx.compose.foundation.layout.Row(
-                    modifier = androidx.compose.ui.Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .padding(horizontal = 8.dp),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                ) {
-                    androidx.compose.material3.IconButton(onClick = onBackClick) {
-                        androidx.compose.material3.Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
-                            contentDescription = "Geri",
-                            tint = androidx.compose.ui.graphics.Color.White
-                        )
-                    }
+            // ============================================
+            // ORDER SUCCESS SCREEN
+            // ============================================
 
-                    androidx.compose.material3.Text(
-                        text = "Ödeme",
-                        style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                        color = androidx.compose.ui.graphics.Color.White,
-                        modifier = androidx.compose.ui.Modifier.padding(start = 8.dp)
-                    )
-                }
-            }
+            composable(
+                route = Screen.OrderSuccess.route,
+                arguments = listOf(
+                    navArgument("invoiceId") { type = NavType.IntType },
+                    navArgument("status") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val invoiceId = backStackEntry.arguments?.getInt("invoiceId") ?: 0
+                val status = backStackEntry.arguments?.getString("status") ?: "Paid"
 
-            // Content
-            androidx.compose.foundation.layout.Box(
-                modifier = androidx.compose.ui.Modifier
-                    .fillMaxSize()
-                    .weight(1f),
-                contentAlignment = androidx.compose.ui.Alignment.Center
-            ) {
-                androidx.compose.foundation.layout.Column(
-                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
-                ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.Payment,
-                        contentDescription = null,
-                        tint = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
-                        modifier = androidx.compose.ui.Modifier.size(100.dp)
-                    )
-
-                    androidx.compose.foundation.layout.Spacer(
-                        modifier = androidx.compose.ui.Modifier.height(24.dp)
-                    )
-
-                    androidx.compose.material3.Text(
-                        text = "Ödeme Ekranı",
-                        style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
-                        color = androidx.compose.ui.graphics.Color.White
-                    )
-
-                    androidx.compose.foundation.layout.Spacer(
-                        modifier = androidx.compose.ui.Modifier.height(8.dp)
-                    )
-
-                    androidx.compose.material3.Text(
-                        text = "Adım 4'te tamamlanacak",
-                        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f)
-                    )
-                }
+                OrderSuccessScreen(
+                    invoiceId = invoiceId,
+                    status = status,
+                    onNavigateToHome = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                inclusive = false
+                            }
+                            launchSingleTop = true
+                        }
+                    },
+                    onNavigateToInvoice = { id ->
+                        // TODO: Navigate to invoice detail screen if available
+                    },
+                    isDarkTheme = isDarkTheme
+                )
             }
         }
     }

@@ -123,18 +123,20 @@ data class KdvConfigResponse(
     @SerializedName("status")
     val status: String,
 
-    @SerializedName("kdv")
-    val kdv: String?,
-
-    @SerializedName("kdv_enabled")
-    val kdvEnabled: Boolean?
+    @SerializedName("message")
+    val message: KdvConfigMessage?
 ) {
     val isSuccess: Boolean
         get() = code == 1 && status == "success"
 
     val kdvRate: Double
-        get() = kdv?.toDoubleOrNull() ?: 0.0
+        get() = message?.taxRate?.replace(",", ".")?.toDoubleOrNull() ?: 0.0
 }
+
+data class KdvConfigMessage(
+    @SerializedName("taxRate")
+    val taxRate: String?
+)
 
 // ============================================
 // TLDs Response - Domain Uzantıları

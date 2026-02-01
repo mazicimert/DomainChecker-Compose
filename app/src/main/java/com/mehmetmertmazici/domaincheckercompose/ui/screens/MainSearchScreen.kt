@@ -7,7 +7,7 @@ import com.mehmetmertmazici.domaincheckercompose.ui.components.scaleClick
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
+
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -34,7 +34,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
+
 import com.mehmetmertmazici.domaincheckercompose.R
 import com.mehmetmertmazici.domaincheckercompose.ui.components.DomainItemCard
 import com.mehmetmertmazici.domaincheckercompose.ui.components.DomainSuggestionCard
@@ -73,12 +73,7 @@ fun MainSearchScreen(
                     Toast.makeText(context, effect.message, Toast.LENGTH_LONG).show()
                 }
                 is SearchEffect.OpenUrl -> {
-                    try {
-                        val intent = Intent(Intent.ACTION_VIEW, effect.url.toUri())
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        Toast.makeText(context, "Tarayıcı açılamadı", Toast.LENGTH_SHORT).show()
-                    }
+                   // Intent.ACTION_VIEW removed as per request
                 }
                 is SearchEffect.CopyToClipboard -> {
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -137,7 +132,7 @@ fun MainSearchScreen(
                                 Icon(
                                     imageVector = Icons.Default.Menu,
                                     contentDescription = "Menu",
-                                    tint = Color.White
+                                    tint = colors.TextPrimary
                                 )
                             }
 
@@ -147,7 +142,7 @@ fun MainSearchScreen(
                                 text = "Domain Checker",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = colors.TextPrimary
                             )
                         }
 
@@ -167,7 +162,7 @@ fun MainSearchScreen(
                                     Icon(
                                         imageVector = Icons.Filled.ShoppingCart,
                                         contentDescription = "Sepet",
-                                        tint = Color.White,
+                                        tint = colors.TextPrimary,
                                         modifier = Modifier.size(24.dp)
                                     )
                                 }
@@ -175,7 +170,7 @@ fun MainSearchScreen(
                                 Icon(
                                     imageVector = Icons.Filled.ShoppingCart,
                                     contentDescription = "Sepet",
-                                    tint = Color.White,
+                                    tint = colors.TextPrimary,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -228,15 +223,14 @@ fun MainSearchScreen(
                         val isInCart = cartUiState.cartItems.any { it.domain == domain.domain }
                         val index = uiState.domains.indexOf(domain)
 
-                        AnimatedListItem(delayMillis = 100 + (index * 80)) {
+                        AnimatedListItem(delayMillis = minOf(index * 40, 300)) {
                             DomainItemCard(
                                 domain = domain,
                                 onClick = {
                                     if (domain.status == "registered") {
                                         viewModel.showWhois(domain.domain)
-                                    } else {
-                                        viewModel.openRegistration(domain.domain)
                                     }
+                                    // available status clicks do nothing now
                                 },
                                 isDarkTheme = isDarkTheme,
                                 isInCart = isInCart,
@@ -245,7 +239,8 @@ fun MainSearchScreen(
                                 } else null,
                                 onRemoveFromCart = if (domain.status == "available" && isInCart) {
                                     { cartViewModel.removeFromCart(domain.domain) }
-                                } else null
+                                } else null,
+                                onGoToCart = onCartClick
                             )
                         }
                     }

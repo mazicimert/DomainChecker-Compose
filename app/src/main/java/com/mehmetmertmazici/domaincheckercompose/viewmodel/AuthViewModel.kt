@@ -240,6 +240,11 @@ class AuthViewModel : ViewModel() {
         loadLocationData()
         // Sözleşmeleri en başta yüklemeye çalışalım
         loadContracts()
+        
+        // Session'ı restore et (Uygulama yeniden başladığında token'ı geri yükle)
+        viewModelScope.launch {
+            authRepository.restoreSession()
+        }
     }
 
     private fun loadLocationData() {
