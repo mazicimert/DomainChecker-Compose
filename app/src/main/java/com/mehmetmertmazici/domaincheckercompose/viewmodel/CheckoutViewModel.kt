@@ -32,20 +32,23 @@ data class CardInputState(
     val cardName: String = "",
     val cardNumber: String = "",
     val cardExpiry: String = "",
-    val cardCvv: String = ""
+    val cardCvv: String = "",
+    // Validation error messages (null = valid)
+    val cardNumberError: String? = null,
+    val cardExpiryError: String? = null,
+    val cardCvvError: String? = null
 ) {
     val isValid: Boolean
-        get() {
-            val expiryDigits = cardExpiry.filter { it.isDigit() }
-            return cardNumber.length >= 16 &&
-                    expiryDigits.length >= 4 &&
-                    cardCvv.length >= 3 &&
-                    cardName.isNotBlank()
-        }
+        get() = cardName.isNotBlank() &&
+                cardNumber.length >= 15 &&
+                cardNumberError == null &&
+                cardExpiry.filter { it.isDigit() }.length >= 4 &&
+                cardExpiryError == null &&
+                cardCvv.length >= 3 &&
+                cardCvvError == null
 
-    // Formatted card number with spaces
-    val formattedCardNumber: String
-        get() = cardNumber.chunked(4).joinToString(" ")
+    val hasAnyError: Boolean
+        get() = cardNumberError != null || cardExpiryError != null || cardCvvError != null
 }
 
 // ============================================
@@ -217,7 +220,7 @@ class CheckoutViewModel : ViewModel() {
     }
 
     // ============================================
-    // CARD INPUT
+    // CARD INPUT & VALIDATION
     // ============================================
 
     fun updateCardName(name: String) {
@@ -227,19 +230,105 @@ class CheckoutViewModel : ViewModel() {
     fun updateCardNumber(number: String) {
         // Remove non-digit characters and limit to 16 digits
         val cleanNumber = number.filter { it.isDigit() }.take(16)
-        _cardInput.value = _cardInput.value.copy(cardNumber = cleanNumber)
+        val error = validateCardNumber(cleanNumber)
+        _cardInput.value = _cardInput.value.copy(
+            cardNumber = cleanNumber,
+            cardNumberError = error
+        )
     }
 
     fun updateCardExpiry(expiry: String) {
-        // Formatlı değeri olduğu gibi sakla ("09 / 27" formatında)
-        // Formatlama ExpiryDateField tarafında yapılıyor
-        _cardInput.value = _cardInput.value.copy(cardExpiry = expiry)
+        // Store only digits (MMYY format)
+        val cleanExpiry = expiry.filter { it.isDigit() }.take(4)
+        val error = validateExpiryDate(cleanExpiry)
+        _cardInput.value = _cardInput.value.copy(
+            cardExpiry = cleanExpiry,
+            cardExpiryError = error
+        )
     }
 
     fun updateCardCvv(cvv: String) {
         // Remove non-digit and limit to 4 (Amex uses 4)
         val cleanCvv = cvv.filter { it.isDigit() }.take(4)
-        _cardInput.value = _cardInput.value.copy(cardCvv = cleanCvv)
+        val error = validateCvv(cleanCvv)
+        _cardInput.value = _cardInput.value.copy(
+            cardCvv = cleanCvv,
+            cardCvvError = error
+        )
+    }
+
+    // ============================================
+    // VALIDATION FUNCTIONS
+    // ============================================
+
+    /**
+     * Validates card number using Luhn algorithm.
+     * Returns error message if invalid, null if valid.
+     */
+    private fun validateCardNumber(number: String): String? {
+        if (number.isEmpty()) return null // Don't show error for empty field
+        if (number.length < 15) return "Kart numarası eksik."
+        if (!isValidLuhn(number)) return "Kart numarası geçersiz."
+        return null
+    }
+
+    /**
+     * Luhn algorithm implementation for credit card validation.
+     */
+    private fun isValidLuhn(number: String): Boolean {
+        if (number.isEmpty()) return false
+        var sum = 0
+        var alternate = false
+        for (i in number.length - 1 downTo 0) {
+            var digit = number[i].digitToInt()
+            if (alternate) {
+                digit *= 2
+                if (digit > 9) digit -= 9
+            }
+            sum += digit
+            alternate = !alternate
+        }
+        return sum % 10 == 0
+    }
+
+    /**
+     * Son kullanma tarihi formatını (AAYY) doğrular ve tarihin gelecekte olup olmadığını kontrol eder.
+     * Geçersizse hata mesajı, geçerliyse null döndürür.
+     */
+    private fun validateExpiryDate(expiry: String): String? {
+        // Alan boşsa hata gösterme
+        if (expiry.isEmpty()) return null
+
+        // 4 haneye (AA/YY) ulaşmadıysa eksik uyarısı ver
+        if (expiry.length < 4) return "Son kullanma tarihi eksik"
+
+        val month = expiry.take(2).toIntOrNull() ?: return "Geçersiz ay"
+        val year = expiry.drop(2).toIntOrNull() ?: return "Geçersiz yıl"
+
+        // Ay aralığını doğrula (01-12)
+        if (month < 1 || month > 12) return "Ay 01-12 arasında olmalıdır"
+
+        // Tarihin geçmişte olup olmadığını kontrol et
+        val calendar = java.util.Calendar.getInstance()
+        val currentYear = calendar.get(java.util.Calendar.YEAR) % 100
+        val currentMonth = calendar.get(java.util.Calendar.MONTH) + 1
+
+        if (year < currentYear || (year == currentYear && month < currentMonth)) {
+            return "Geçmiş tarih kullanılamaz"
+        }
+
+        return null
+    }
+
+    /**
+     * Validates CVV length (3 or 4 digits).
+     * Returns error message if invalid, null if valid.
+     */
+    private fun validateCvv(cvv: String): String? {
+        if (cvv.isEmpty()) return null // Don't show error for empty field
+        if (cvv.length < 3) return "CVV numarası eksik."
+        // 3-4 digits are valid (Amex uses 4)
+        return null
     }
 
     // ============================================

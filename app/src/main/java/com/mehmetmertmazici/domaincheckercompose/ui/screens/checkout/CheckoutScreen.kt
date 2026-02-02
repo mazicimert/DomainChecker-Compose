@@ -42,6 +42,8 @@ import com.mehmetmertmazici.domaincheckercompose.ui.components.GradientBackgroun
 import com.mehmetmertmazici.domaincheckercompose.ui.components.scaleClick
 import com.mehmetmertmazici.domaincheckercompose.ui.theme.DarkColors
 import com.mehmetmertmazici.domaincheckercompose.ui.theme.LightColors
+import com.mehmetmertmazici.domaincheckercompose.ui.util.CreditCardVisualTransformation
+import com.mehmetmertmazici.domaincheckercompose.ui.util.ExpiryDateVisualTransformation
 import com.mehmetmertmazici.domaincheckercompose.viewmodel.CheckoutEffect
 import com.mehmetmertmazici.domaincheckercompose.viewmodel.CheckoutUiState
 import com.mehmetmertmazici.domaincheckercompose.viewmodel.CheckoutViewModel
@@ -476,14 +478,11 @@ private fun StripePaymentForm(
                 isDarkTheme = isDarkTheme
             )
 
-            // Card Number
-            PaymentTextField(
-                value = cardInput.formattedCardNumber,
+            // Card Number with VisualTransformation and Error
+            CardNumberField(
+                value = cardInput.cardNumber,
                 onValueChange = onCardNumberChange,
-                label = "Kart Numarası",
-                placeholder = "1234 5678 9012 3456",
-                leadingIcon = Icons.Default.CreditCard,
-                keyboardType = KeyboardType.Number,
+                errorMessage = cardInput.cardNumberError,
                 isDarkTheme = isDarkTheme
             )
 
@@ -494,10 +493,11 @@ private fun StripePaymentForm(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Son Kullanma - Smart Formatted
+                // Son Kullanma - with VisualTransformation and Error
                 ExpiryDateField(
                     value = cardInput.cardExpiry,
                     onValueChange = onExpiryChange,
+                    errorMessage = cardInput.cardExpiryError,
                     onComplete = {
                         try { cvvFocusRequester.requestFocus() } catch (_: Exception) {}
                     },
@@ -505,10 +505,11 @@ private fun StripePaymentForm(
                     modifier = Modifier.weight(1f)
                 )
 
-                // CVV - Simetrik Label
+                // CVV with Error
                 CvvField(
                     value = cardInput.cardCvv,
                     onValueChange = onCvvChange,
+                    errorMessage = cardInput.cardCvvError,
                     isDarkTheme = isDarkTheme,
                     focusRequester = cvvFocusRequester,
                     modifier = Modifier.weight(1f)
@@ -581,32 +582,64 @@ private fun PaymentTextField(
 }
 
 // ============================================
-// EXPIRY DATE FIELD - Smart Formatted
+// CARD NUMBER FIELD - with VisualTransformation
+// ============================================
+@Composable
+private fun CardNumberField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    errorMessage: String?,
+    isDarkTheme: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val colors = if (isDarkTheme) DarkColors else LightColors
+    val isError = errorMessage != null
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text("Kart Numarası") },
+        placeholder = { Text("**** **** **** ****", color = colors.TextTertiary) },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Default.CreditCard,
+                contentDescription = null,
+                tint = if (isError) colors.Error else colors.TextSecondary,
+                modifier = Modifier.size(20.dp)
+            )
+        },
+        isError = isError,
+        supportingText = if (isError) {
+            { Text(errorMessage!!, color = colors.Error) }
+        } else null,
+        visualTransformation = CreditCardVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        singleLine = true,
+        shape = RoundedCornerShape(16.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = if (isError) colors.Error else colors.Primary,
+            unfocusedBorderColor = if (isError) colors.Error.copy(alpha = 0.5f) else colors.Outline.copy(alpha = 0.3f),
+            focusedLabelColor = if (isError) colors.Error else colors.Primary,
+            errorBorderColor = colors.Error
+        ),
+        modifier = modifier.fillMaxWidth()
+    )
+}
+
+// ============================================
+// EXPIRY DATE FIELD - with VisualTransformation and Error
 // ============================================
 @Composable
 private fun ExpiryDateField(
     value: String,
     onValueChange: (String) -> Unit,
+    errorMessage: String?,
     onComplete: () -> Unit,
     isDarkTheme: Boolean,
     modifier: Modifier = Modifier
 ) {
     val colors = if (isDarkTheme) DarkColors else LightColors
-
-    // TextFieldValue ile cursor pozisyonunu kontrol et
-    var textFieldValue by remember {
-        mutableStateOf(TextFieldValue(text = value, selection = TextRange(value.length)))
-    }
-
-    // Dışarıdan gelen değer değişikliklerini senkronize et
-    LaunchedEffect(value) {
-        if (textFieldValue.text != value) {
-            textFieldValue = TextFieldValue(
-                text = value,
-                selection = TextRange(value.length)
-            )
-        }
-    }
+    val isError = errorMessage != null
 
     Column(modifier = modifier) {
         // Kutu üstü etiket
@@ -614,106 +647,63 @@ private fun ExpiryDateField(
             text = "Son Kullanma",
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Medium,
-            color = colors.TextSecondary,
+            color = if (isError) colors.Error else colors.TextSecondary,
             modifier = Modifier.padding(bottom = 6.dp, start = 4.dp)
         )
 
         OutlinedTextField(
-            value = textFieldValue,
-            onValueChange = { newTfv ->
-                val newDigits = newTfv.text.filter { it.isDigit() }
-                val oldDigits = textFieldValue.text.filter { it.isDigit() }
-                val isAdding = newDigits.length > oldDigits.length
-
-                // Max 4 rakam (AAYY)
-                if (newDigits.length > 4) return@OutlinedTextField
-
-                val formatted = if (isAdding) {
-                    formatExpiryAdding(newDigits)
-                } else {
-                    formatExpiryDeleting(newDigits)
-                }
-
-                // Cursor'ı her zaman sona taşı
-                textFieldValue = TextFieldValue(
-                    text = formatted,
-                    selection = TextRange(formatted.length)
-                )
-
-                onValueChange(formatted)
-
-                // Yıl tamamlandığında CVV'ye geç
-                if (newDigits.length == 4 && isAdding) {
+            value = value,
+            onValueChange = { newValue ->
+                // Filter to only digits and limit to 4
+                val digitsOnly = newValue.filter { it.isDigit() }.take(4)
+                onValueChange(digitsOnly)
+                
+                // Auto-advance to CVV when all 4 digits entered
+                if (digitsOnly.length == 4 && digitsOnly.length > value.length) {
                     onComplete()
                 }
             },
-            placeholder = {
-                Text("AA / YY", color = colors.TextTertiary)
-            },
+            // No placeholder needed - mask shows AA/YY template
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.CalendarMonth,
                     contentDescription = null,
-                    tint = colors.TextSecondary,
+                    tint = if (isError) colors.Error else colors.TextSecondary,
                     modifier = Modifier.size(20.dp)
                 )
             },
+            isError = isError,
+            supportingText = if (isError) {
+                { Text(errorMessage!!, color = colors.Error, style = MaterialTheme.typography.labelSmall) }
+            } else null,
+            visualTransformation = ExpiryDateVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
             shape = RoundedCornerShape(16.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = colors.Primary,
-                unfocusedBorderColor = colors.Outline.copy(alpha = 0.3f)
+                focusedBorderColor = if (isError) colors.Error else colors.Primary,
+                unfocusedBorderColor = if (isError) colors.Error.copy(alpha = 0.5f) else colors.Outline.copy(alpha = 0.3f),
+                errorBorderColor = colors.Error
             ),
             modifier = Modifier.fillMaxWidth()
         )
     }
 }
 
-/**
- * Rakam ekleme modunda akıllı formatlama:
- * - İlk rakam 2-9 → otomatik "0X / " (ör: 3 → "03 / ")
- * - İlk rakam 0 veya 1 → ikinci rakamı bekle (ör: 1 → "1")
- * - 2 rakam sonrası → " / " ayracı ekle (ör: 12 → "12 / ")
- * - 3-4 rakam → yıl kısmı (ör: 123 → "12 / 3", 1225 → "12 / 25")
- */
-private fun formatExpiryAdding(digits: String): String {
-    if (digits.isEmpty()) return ""
-
-    // İlk rakam: 2-9 → başına 0 ekle ve ayraç koy
-    if (digits.length == 1) {
-        val d = digits[0].digitToInt()
-        return if (d in 2..9) "0$d / " else digits
-    }
-
-    // 2+ rakam: AA / YY formatı
-    val month = digits.take(2)
-    val year = digits.drop(2)
-    return if (year.isEmpty()) "$month / " else "$month / $year"
-}
-
-/**
- * Silme modunda formatlama:
- * - Ayracı temizler ve kalan rakamlara göre yeniden formatlar
- */
-private fun formatExpiryDeleting(digits: String): String {
-    if (digits.isEmpty()) return ""
-    if (digits.length <= 2) return digits
-    return "${digits.take(2)} / ${digits.drop(2)}"
-}
-
 // ============================================
-// CVV FIELD - Simetrik (ExpiryDateField ile eş)
+// CVV FIELD - with Error
 // ============================================
 @Composable
 private fun CvvField(
     value: String,
     onValueChange: (String) -> Unit,
+    errorMessage: String?,
     isDarkTheme: Boolean,
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier
 ) {
     val colors = if (isDarkTheme) DarkColors else LightColors
+    val isError = errorMessage != null
 
     Column(modifier = modifier) {
         // Kutu üstü etiket (ExpiryDateField ile aynı stil)
@@ -721,7 +711,7 @@ private fun CvvField(
             text = "CVV",
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Medium,
-            color = colors.TextSecondary,
+            color = if (isError) colors.Error else colors.TextSecondary,
             modifier = Modifier.padding(bottom = 6.dp, start = 4.dp)
         )
 
@@ -735,16 +725,21 @@ private fun CvvField(
                 Icon(
                     imageVector = Icons.Default.Lock,
                     contentDescription = null,
-                    tint = colors.TextSecondary,
+                    tint = if (isError) colors.Error else colors.TextSecondary,
                     modifier = Modifier.size(20.dp)
                 )
             },
+            isError = isError,
+            supportingText = if (isError) {
+                { Text(errorMessage!!, color = colors.Error, style = MaterialTheme.typography.labelSmall) }
+            } else null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
             shape = RoundedCornerShape(16.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = colors.Primary,
-                unfocusedBorderColor = colors.Outline.copy(alpha = 0.3f)
+                focusedBorderColor = if (isError) colors.Error else colors.Primary,
+                unfocusedBorderColor = if (isError) colors.Error.copy(alpha = 0.5f) else colors.Outline.copy(alpha = 0.3f),
+                errorBorderColor = colors.Error
             ),
             modifier = Modifier
                 .fillMaxWidth()
